@@ -30,6 +30,22 @@ export interface Incident {
   bbox_h: number;
   created_at: string;
   timestamp_label: string;
+  dispatched_to?: string | null;
+  sla_deadline?: string | null;
+  dispatch_notes?: string | null;
+}
+
+export interface WorkOrder {
+  id: number;
+  incident_id: number;
+  contractor_name: string;
+  zone: string;
+  priority: string;
+  sla_hours: number;
+  deadline: string;
+  status: string;
+  notes?: string;
+  created_at: string;
 }
 
 export interface Analytics {
@@ -227,6 +243,37 @@ export const api = {
       headers: { ...authHeaders() },
     });
     return handleApiResponse(res, "Failed to resolve incident");
+  },
+
+  async dispatchIncident(id: number, data: {
+    contractor_name: string;
+    zone: string;
+    priority?: string;
+    sla_hours?: number;
+    notes?: string;
+  }): Promise<{ success: boolean; work_order: WorkOrder; incident: Incident }> {
+    const res = await fetch(`${BASE_URL}/api/incidents/${id}/dispatch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse(res, "Failed to dispatch contractor crew");
+  },
+
+  async getWorkOrders(): Promise<{
+    total_dispatched: number;
+    completed: number;
+    in_progress: number;
+    sla_compliance_rate: number;
+    work_orders: WorkOrder[];
+  }> {
+    const res = await fetch(`${BASE_URL}/api/workorders`, {
+      headers: { ...authHeaders() },
+    });
+    return handleApiResponse(res, "Failed to fetch work orders");
   },
 
   async getAnalytics(): Promise<Analytics> {

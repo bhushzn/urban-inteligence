@@ -14,6 +14,7 @@ interface Props {
   onVerify: (id: number) => void;
   onResolve: (id: number) => void;
   onOpenLogin: () => void;
+  onDispatch?: (inc: Incident) => void;
 }
 
 type FilterType = "all" | "critical" | "unverified" | "resolved";
@@ -29,6 +30,7 @@ export default function IncidentFeed({
   onVerify,
   onResolve,
   onOpenLogin,
+  onDispatch,
 }: Props) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
@@ -162,6 +164,7 @@ export default function IncidentFeed({
               onSelect={() => onSelect(inc)}
               onVerify={() => onVerify(inc.id)}
               onResolve={() => onResolve(inc.id)}
+              onDispatch={() => onDispatch?.(inc)}
               onOpenLogin={onOpenLogin}
               style={{ animationDelay: `${idx * 0.05}s` }}
             />
@@ -181,6 +184,7 @@ function IncidentCard({
   onVerify,
   onResolve,
   onOpenLogin,
+  onDispatch,
   style,
 }: {
   incident: Incident;
@@ -191,6 +195,7 @@ function IncidentCard({
   onVerify: () => void;
   onResolve: () => void;
   onOpenLogin: () => void;
+  onDispatch?: () => void;
   style?: React.CSSProperties;
 }) {
   const sevColor = inc.severity === "High" ? "red" : inc.severity === "Medium" ? "amber" : "cyan";
@@ -294,6 +299,13 @@ function IncidentCard({
             <span className="ml-1 text-slate-600">• {inc.timestamp_label}</span>
           </p>
 
+          {inc.dispatched_to && (
+            <div className="w-full flex items-center gap-1.5 text-[10px] text-cyan-300 bg-cyan-950/40 border border-cyan-500/30 rounded-md px-2 py-0.5 mb-2">
+              <span className="font-semibold">👷 {inc.dispatched_to}</span>
+              {inc.sla_deadline && <span className="text-slate-400">• SLA: {inc.sla_deadline}</span>}
+            </div>
+          )}
+
           <div className="flex items-center gap-1.5 flex-wrap">
             {inc.resolved ? (
               <div className="flex items-center gap-1 text-xs text-emerald-400">
@@ -304,6 +316,18 @@ function IncidentCard({
                 <div className="flex items-center gap-1 text-xs text-emerald-400">
                   <CheckCircle className="w-3.5 h-3.5" /> Verified
                 </div>
+                {isAdmin && onDispatch && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      onDispatch();
+                    }}
+                    title="Dispatch Municipal Repair Crew"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 text-xs font-semibold transition-all"
+                  >
+                    ⚡ Dispatch
+                  </button>
+                )}
                 <button
                   onClick={e => {
                     e.stopPropagation();
@@ -328,28 +352,42 @@ function IncidentCard({
                 </button>
               </>
             ) : (
-              <button
-                onClick={e => {
-                  e.stopPropagation();
-                  if (!isLoggedIn) {
-                    onOpenLogin();
-                    return;
-                  }
-                  if (!isAdmin) {
-                    alert("⚠️ Permission Denied: Only Command Center Admins can verify incidents.");
-                    return;
-                  }
-                  onVerify();
-                }}
-                title={!isLoggedIn ? "Sign in to verify" : !isAdmin ? "Requires Admin Role" : "Verify Anomaly"}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all ${
-                  isLoggedIn && !isAdmin
-                    ? "bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed opacity-60"
-                    : "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20"
-                }`}
-              >
-                <Shield className="w-3 h-3" /> Verify
-              </button>
+              <>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (!isLoggedIn) {
+                      onOpenLogin();
+                      return;
+                    }
+                    if (!isAdmin) {
+                      alert("⚠️ Permission Denied: Only Command Center Admins can verify incidents.");
+                      return;
+                    }
+                    onVerify();
+                  }}
+                  title={!isLoggedIn ? "Sign in to verify" : !isAdmin ? "Requires Admin Role" : "Verify Anomaly"}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all ${
+                    isLoggedIn && !isAdmin
+                      ? "bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed opacity-60"
+                      : "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20"
+                  }`}
+                >
+                  <Shield className="w-3 h-3" /> Verify
+                </button>
+                {isAdmin && onDispatch && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      onDispatch();
+                    }}
+                    title="Dispatch Municipal Repair Crew"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 text-xs font-semibold transition-all"
+                  >
+                    ⚡ Dispatch
+                  </button>
+                )}
+              </>
             )}
             <a
               href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${inc.lat},${inc.lng}`}

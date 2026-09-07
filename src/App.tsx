@@ -6,6 +6,8 @@ import AnalyticsPanel from "./components/AnalyticsPanel";
 import ReportModal from "./components/ReportModal";
 import LoginModal from "./components/LoginModal";
 import { ProjectShowcaseModal } from "./components/ProjectShowcaseModal";
+import { WorkOrderModal } from "./components/WorkOrderModal";
+import { CitizenPortalModal } from "./components/CitizenPortalModal";
 import { api, connectWebSocket, getStoredUser } from "./api";
 import type { Incident, Analytics, WSEvent, User } from "./api";
 import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotificationPermission } from "./utils/audioAlert";
@@ -18,6 +20,8 @@ export default function App() {
   const [showReport,     setShowReport]     = useState(false);
   const [showLogin,      setShowLogin]      = useState(false);
   const [showShowcase,   setShowShowcase]   = useState(false);
+  const [showCitizenPortal, setShowCitizenPortal] = useState(false);
+  const [dispatchIncidentTarget, setDispatchIncidentTarget] = useState<Incident | null>(null);
   const [user,           setUser]           = useState<User | null>(() => getStoredUser());
   const [soundEnabled,   setSoundEnabled]   = useState(true);
   const [exportToast,    setExportToast]    = useState(false);
@@ -161,6 +165,23 @@ export default function App() {
         onClose={() => setShowShowcase(false)}
       />
 
+      {/* Citizen Grievance Portal Modal */}
+      <CitizenPortalModal
+        isOpen={showCitizenPortal}
+        onClose={() => setShowCitizenPortal(false)}
+        onReportSubmitted={loadAll}
+      />
+
+      {/* Contractor SLA Work Order Modal */}
+      {dispatchIncidentTarget && (
+        <WorkOrderModal
+          incident={dispatchIncidentTarget}
+          isOpen={!!dispatchIncidentTarget}
+          onClose={() => setDispatchIncidentTarget(null)}
+          onDispatched={loadAll}
+        />
+      )}
+
       {/* Navbar */}
       <Navbar
         onExport={handleExport}
@@ -173,6 +194,7 @@ export default function App() {
           setUser(null);
         }}
         onOpenShowcase={() => setShowShowcase(true)}
+        onOpenCitizenPortal={() => setShowCitizenPortal(true)}
       />
 
       {/* Main */}
@@ -203,6 +225,7 @@ export default function App() {
                 onSelect={handleSelectIncident}
                 onVerify={handleVerify}
                 onResolve={handleResolve}
+                onDispatch={(inc) => setDispatchIncidentTarget(inc)}
                 onOpenLogin={() => setShowLogin(true)}
               />
             </div>

@@ -86,7 +86,42 @@ async def main():
     assert login_resp.status_code == 200
     login_data = login_resp.json()
     assert "access_token" in login_data
+    admin_token = login_data["access_token"]
     print("[PASS] Auth login endpoint returned valid Bearer token.")
+
+    # Phase 7: Test Contractor Work Order Dispatch
+    print("\n--- 4b. Testing Contractor SLA Work Order Dispatch ---")
+    incs_resp = client.get("/api/incidents")
+    assert incs_resp.status_code == 200
+    all_incs = incs_resp.json()
+    assert len(all_incs) > 0
+    test_inc_id = all_incs[0]["id"]
+
+    dispatch_payload = {
+        "contractor_name": "Bhopal PWD — Rapid Road Repair Unit",
+        "zone": "Zone 1 (New Bhopal)",
+        "priority": "High",
+        "sla_hours": 24,
+        "notes": "Emergency cold-mix patch crew assigned."
+    }
+    dispatch_resp = client.post(
+        f"/api/incidents/{test_inc_id}/dispatch",
+        json=dispatch_payload,
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert dispatch_resp.status_code == 200, f"Dispatch failed: {dispatch_resp.text}"
+    disp_data = dispatch_resp.json()
+    assert disp_data["success"] is True
+    assert disp_data["work_order"]["contractor_name"] == dispatch_payload["contractor_name"]
+    assert disp_data["incident"]["dispatched_to"] == dispatch_payload["contractor_name"]
+    print(f"[PASS] Successfully dispatched Incident #{test_inc_id} to contractor with 24h SLA!")
+
+    # Test GET /api/workorders
+    wo_resp = client.get("/api/workorders")
+    assert wo_resp.status_code == 200
+    wo_data = wo_resp.json()
+    assert wo_data["total_dispatched"] > 0
+    print(f"[PASS] Retrieved work orders: {wo_data['total_dispatched']} total, compliance rate: {wo_data['sla_compliance_rate']}%")
 
     # Test Rate Limiter
     print("\n--- 5. Testing Rate Limiter (brute force protection) ---")

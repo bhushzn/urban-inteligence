@@ -10,9 +10,10 @@ interface Props {
   onLoginClick: () => void;
   onLogout: () => void;
   onOpenShowcase?: () => void;
+  onOpenCitizenPortal?: () => void;
 }
 
-export default function Navbar({ onExport, onReport, analytics, user, onLoginClick, onLogout, onOpenShowcase }: Props) {
+export default function Navbar({ onExport, onReport, analytics, user, onLoginClick, onLogout, onOpenShowcase, onOpenCitizenPortal }: Props) {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000);
@@ -77,6 +78,14 @@ export default function Navbar({ onExport, onReport, analytics, user, onLoginCli
           >
             <PlusCircle className="w-4 h-4" />
             Report
+          </button>
+          <button
+            onClick={onOpenCitizenPortal}
+            title="Public Citizen Reporting Portal"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/20 hover:border-emerald-400/50 transition-all duration-200"
+          >
+            <span>📢</span>
+            <span className="hidden md:inline">Citizen Portal</span>
           </button>
           <button
             onClick={onExport}

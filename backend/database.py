@@ -216,15 +216,59 @@ async def init_db(password_hasher=None):
             );
         """
 
+    if IS_POSTGRES:
+        create_work_orders_sql = """
+            CREATE TABLE IF NOT EXISTS work_orders (
+                id              SERIAL PRIMARY KEY,
+                incident_id     INTEGER NOT NULL,
+                contractor_name VARCHAR(150) NOT NULL,
+                zone            VARCHAR(100) NOT NULL,
+                priority        VARCHAR(20) NOT NULL,
+                sla_hours       INTEGER NOT NULL DEFAULT 24,
+                deadline        VARCHAR(100) NOT NULL,
+                status          VARCHAR(50) NOT NULL DEFAULT 'Dispatched',
+                notes           TEXT,
+                created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+            );
+        """
+    else:
+        create_work_orders_sql = """
+            CREATE TABLE IF NOT EXISTS work_orders (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                incident_id     INTEGER NOT NULL,
+                contractor_name TEXT NOT NULL,
+                zone            TEXT NOT NULL,
+                priority        TEXT NOT NULL,
+                sla_hours       INTEGER NOT NULL DEFAULT 24,
+                deadline        TEXT NOT NULL,
+                status          TEXT NOT NULL DEFAULT 'Dispatched',
+                notes           TEXT,
+                created_at      TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+            );
+        """
+
     await execute(create_incidents_sql)
     await execute(create_users_sql)
+    await execute(create_work_orders_sql)
+
+    # Safe column additions if not already present
+    for col_sql in [
+        "ALTER TABLE incidents ADD COLUMN dispatched_to TEXT",
+        "ALTER TABLE incidents ADD COLUMN sla_deadline TEXT",
+        "ALTER TABLE incidents ADD COLUMN dispatch_notes TEXT"
+    ]:
+        try:
+            await execute(col_sql)
+        except Exception:
+            pass
 
     # Create indexes for high-speed lookups and filtering
     index_sqls = [
         "CREATE INDEX IF NOT EXISTS idx_incidents_ward ON incidents(ward);",
         "CREATE INDEX IF NOT EXISTS idx_incidents_severity ON incidents(severity);",
         "CREATE INDEX IF NOT EXISTS idx_incidents_resolved ON incidents(resolved);",
-        "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);"
+        "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);",
+        "CREATE INDEX IF NOT EXISTS idx_work_orders_incident ON work_orders(incident_id);"
     ]
     for idx_sql in index_sqls:
         try:
