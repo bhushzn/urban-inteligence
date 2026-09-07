@@ -83,8 +83,8 @@ export default function ReportModal({ onClose, onCreated }: Props) {
       await api.createIncident(form);
       setStep("done");
       setTimeout(() => { onCreated(); onClose(); }, 1500);
-    } catch {
-      alert("Failed to submit. Is the backend running?");
+    } catch (err: any) {
+      alert(err.message || "Failed to submit. Is the backend running?");
     } finally {
       setSubmitting(false);
     }

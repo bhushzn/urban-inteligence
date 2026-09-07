@@ -58,6 +58,33 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface SystemHealth {
+  status: "healthy" | "degraded";
+  service: string;
+  version: string;
+  uptime_seconds: number;
+  timestamp: string;
+  ai_engine: {
+    loaded: boolean;
+    model_name: string;
+    status: string;
+  };
+  database: {
+    status: string;
+    engine: string;
+    incidents_count?: number;
+    users_count?: number;
+    details?: string;
+  };
+  storage: {
+    status: string;
+    engine: string;
+    cloudinary_configured: boolean;
+    local_uploads_count: number;
+  };
+  active_websockets: number;
+}
+
 // ─── Token Management ──────────────────────────────────────────────────────
 const TOKEN_KEY = "urbanintel_token";
 const USER_KEY = "urbanintel_user";
@@ -91,6 +118,30 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function handleApiResponse(res: Response, fallbackError: string) {
+  if (res.status === 429) {
+    const err = await res.json().catch(() => ({ detail: "Too many requests" }));
+    throw new Error(`⚠️ Rate limit reached: ${err.detail || "Please wait 60 seconds before retrying."}`);
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: fallbackError }));
+    throw new Error(err.detail || err.error || fallbackError);
+  }
+  return res.json();
+}
+
+// ─── Image URL Resolver (Handles both Cloudinary & Local storage) ──────────
+export const IMAGE_BASE = BASE_URL;
+
+export function resolveImageUrl(pathOrUrl: string | null | undefined): string | null {
+  if (!pathOrUrl) return null;
+  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
+    return pathOrUrl;
+  }
+  const cleanPath = pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
+  return `${BASE_URL}${cleanPath}`;
+}
+
 // ─── REST API ──────────────────────────────────────────────────────────────
 export const api = {
   // Auth
@@ -100,11 +151,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Login failed" }));
-      throw new Error(err.detail || "Invalid credentials");
-    }
-    const data: AuthResponse = await res.json();
+    const data: AuthResponse = await handleApiResponse(res, "Login failed");
     setStoredAuth(data.access_token, data.user);
     return data;
   },
@@ -115,11 +162,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password, name, role }),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Registration failed" }));
-      throw new Error(err.detail || "Registration failed");
-    }
-    const data: AuthResponse = await res.json();
+    const data: AuthResponse = await handleApiResponse(res, "Registration failed");
     setStoredAuth(data.access_token, data.user);
     return data;
   },
@@ -127,20 +170,30 @@ export const api = {
   async getMe(): Promise<User | null> {
     const token = getStoredToken();
     if (!token) return null;
-    const res = await fetch(`${BASE_URL}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      setStoredAuth(null, null);
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setStoredAuth(null, null);
+        return null;
+      }
+      const data = await res.json();
+      setStoredAuth(token, data.user);
+      return data.user;
+    } catch {
       return null;
     }
-    const data = await res.json();
-    setStoredAuth(token, data.user);
-    return data.user;
   },
 
   logout() {
     setStoredAuth(null, null);
+  },
+
+  // Health / Telemetry
+  async getHealth(): Promise<SystemHealth> {
+    const res = await fetch(`${BASE_URL}/api/health`);
+    return handleApiResponse(res, "Failed to fetch system diagnostics");
   },
 
   // Incidents
@@ -148,7 +201,7 @@ export const api = {
     const res = await fetch(`${BASE_URL}/api/incidents`, {
       headers: { ...authHeaders() },
     });
-    return res.json();
+    return handleApiResponse(res, "Failed to load incidents");
   },
 
   async verifyIncident(id: number): Promise<Incident> {
@@ -156,7 +209,7 @@ export const api = {
       method: "PATCH",
       headers: { ...authHeaders() },
     });
-    return res.json();
+    return handleApiResponse(res, "Failed to verify incident");
   },
 
   async resolveIncident(id: number): Promise<Incident> {
@@ -164,14 +217,14 @@ export const api = {
       method: "PATCH",
       headers: { ...authHeaders() },
     });
-    return res.json();
+    return handleApiResponse(res, "Failed to resolve incident");
   },
 
   async getAnalytics(): Promise<Analytics> {
     const res = await fetch(`${BASE_URL}/api/analytics`, {
       headers: { ...authHeaders() },
     });
-    return res.json();
+    return handleApiResponse(res, "Failed to fetch analytics");
   },
 
   async analyzeImage(file: File, category: string): Promise<AIResult> {
@@ -183,7 +236,7 @@ export const api = {
       headers: { ...authHeaders() },
       body: form,
     });
-    return res.json();
+    return handleApiResponse(res, "AI analysis request failed");
   },
 
   async createIncident(data: FormData): Promise<Incident> {
@@ -192,7 +245,7 @@ export const api = {
       headers: { ...authHeaders() },
       body: data,
     });
-    return res.json();
+    return handleApiResponse(res, "Failed to submit incident report");
   },
 };
 
@@ -242,5 +295,3 @@ export function connectWebSocket(
     ws?.close();
   };
 }
-
-export const IMAGE_BASE = BASE_URL;

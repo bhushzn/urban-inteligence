@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { CheckCircle, MapPin, Shield, Loader2, CheckCheck, Volume2, VolumeX, Search, Filter } from "lucide-react";
 import type { Incident, User } from "../api";
-import { IMAGE_BASE } from "../api";
+import { resolveImageUrl } from "../api";
 
 interface Props {
   incidents: Incident[];
@@ -230,7 +230,7 @@ function IncidentCard({
         >
           {inc.image_url ? (
             <img
-              src={`${IMAGE_BASE}${inc.image_url}`}
+              src={resolveImageUrl(inc.image_url) || ""}
               alt={inc.type}
               className="w-full h-full object-cover"
             />
