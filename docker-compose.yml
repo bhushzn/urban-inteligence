@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # FastAPI + YOLOv8 Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: urbanintel-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://urbanintel:secretpassword@postgres:5432/urbanintel_db
+      - JWT_SECRET=urbanintel-production-docker-secret-key-2024
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:80,http://localhost:3000
+      - CLOUDINARY_CLOUD_NAME=
+      - CLOUDINARY_API_KEY=
+      - CLOUDINARY_API_SECRET=
+    volumes:
+      - backend-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # React Frontend (Nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: urbanintel-frontend
+    ports:
+      - "80:80"
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Cloud PostgreSQL Database Engine
+  postgres:
+    image: postgres:15-alpine
+    container_name: urbanintel-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=urbanintel
+      - POSTGRES_PASSWORD=secretpassword
+      - POSTGRES_DB=urbanintel_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U urbanintel -d urbanintel_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  backend-uploads:
+  postgres-data:

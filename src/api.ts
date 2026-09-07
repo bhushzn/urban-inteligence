@@ -1,6 +1,15 @@
 // API Client for UrbanIntel AI Backend
-const BASE_URL = "http://localhost:8000";
-const WS_URL  = "ws://localhost:8000/ws";
+const RAW_API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
+const BASE_URL = RAW_API_URL.replace(/\/+$/, "");
+
+// Auto-derive WebSocket URL (http -> ws, https -> wss)
+const deriveWsUrl = (apiUrl: string): string => {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL as string;
+  const wsProto = apiUrl.startsWith("https://") ? "wss://" : "ws://";
+  const host = apiUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  return `${wsProto}${host}/ws`;
+};
+const WS_URL = deriveWsUrl(BASE_URL);
 
 export interface Incident {
   id: number;

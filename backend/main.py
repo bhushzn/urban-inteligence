@@ -85,9 +85,16 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
+# Environment-driven CORS configuration
+raw_cors = os.getenv("CORS_ORIGINS", "*").strip()
+if raw_cors == "*" or not raw_cors:
+    allowed_origins = ["*"]
+else:
+    allowed_origins = [orig.strip() for orig in raw_cors.split(",") if orig.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
