@@ -15,6 +15,7 @@ interface Props {
   onResolve: (id: number) => void;
   onOpenLogin: () => void;
   onDispatch?: (inc: Incident) => void;
+  onVerifyRepair?: (inc: Incident) => void;
 }
 
 type FilterType = "all" | "critical" | "unverified" | "resolved";
@@ -31,6 +32,7 @@ export default function IncidentFeed({
   onResolve,
   onOpenLogin,
   onDispatch,
+  onVerifyRepair,
 }: Props) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
@@ -165,6 +167,7 @@ export default function IncidentFeed({
               onVerify={() => onVerify(inc.id)}
               onResolve={() => onResolve(inc.id)}
               onDispatch={() => onDispatch?.(inc)}
+              onVerifyRepair={onVerifyRepair ? () => onVerifyRepair(inc) : undefined}
               onOpenLogin={onOpenLogin}
               style={{ animationDelay: `${idx * 0.05}s` }}
             />
@@ -185,6 +188,7 @@ function IncidentCard({
   onResolve,
   onOpenLogin,
   onDispatch,
+  onVerifyRepair,
   style,
 }: {
   incident: Incident;
@@ -196,6 +200,7 @@ function IncidentCard({
   onResolve: () => void;
   onOpenLogin: () => void;
   onDispatch?: () => void;
+  onVerifyRepair?: () => void;
   style?: React.CSSProperties;
 }) {
   const sevColor = inc.severity === "High" ? "red" : inc.severity === "Medium" ? "amber" : "cyan";
@@ -308,8 +313,15 @@ function IncidentCard({
 
           <div className="flex items-center gap-1.5 flex-wrap">
             {inc.resolved ? (
-              <div className="flex items-center gap-1 text-xs text-emerald-400">
-                <CheckCheck className="w-3.5 h-3.5" /> Resolved
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1 text-xs text-emerald-400">
+                  <CheckCheck className="w-3.5 h-3.5" /> Resolved
+                </div>
+                {inc.repair_score && (
+                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/40 border border-emerald-500/30 rounded px-1.5 py-0.5">
+                    🛠️ {inc.repair_score}% AI Verified
+                  </span>
+                )}
               </div>
             ) : inc.verified ? (
               <>
@@ -326,6 +338,18 @@ function IncidentCard({
                     className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 text-xs font-semibold transition-all"
                   >
                     ⚡ Dispatch
+                  </button>
+                )}
+                {onVerifyRepair && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      onVerifyRepair();
+                    }}
+                    title="Contractor Proof-of-Work Verification"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 text-xs font-semibold transition-all"
+                  >
+                    🛠️ Proof of Work
                   </button>
                 )}
                 <button

@@ -33,6 +33,8 @@ export interface Incident {
   dispatched_to?: string | null;
   sla_deadline?: string | null;
   dispatch_notes?: string | null;
+  after_image_url?: string | null;
+  repair_score?: number | null;
 }
 
 export interface WorkOrder {
@@ -46,6 +48,83 @@ export interface WorkOrder {
   status: string;
   notes?: string;
   created_at: string;
+  after_image_url?: string | null;
+  repair_score?: number | null;
+  verified_at?: string | null;
+}
+
+export interface CorridorPDI {
+  id: string;
+  name: string;
+  length_km: number;
+  daily_pcu: number;
+  wards: string[];
+  pdi_score: number;
+  status: "Optimal" | "Moderate" | "Critical";
+  status_color: string;
+  active_anomalies: number;
+  critical_count: number;
+  forecast_15d: number;
+  forecast_30d: number;
+  repair_cost_inr: number;
+  repair_cost_label: string;
+  lat: number;
+  lng: number;
+  dominant_damage: string;
+  jurisdiction: string;
+  surface_type: string;
+}
+
+export interface CorridorAnalyticsResponse {
+  city: string;
+  monitored_corridors_count: number;
+  total_lane_km: number;
+  city_average_pdi: number;
+  overall_status: "Optimal" | "Moderate" | "Critical";
+  total_budget_inr: number;
+  total_budget_label: string;
+  corridors: CorridorPDI[];
+}
+
+export interface ContractorLeaderboardItem {
+  name: string;
+  dispatched: number;
+  completed: number;
+  compliance_pct: number;
+  avg_quality_score: number;
+  rating: string;
+}
+
+export interface AuditSummary {
+  report_id: string;
+  municipality: string;
+  system: string;
+  generated_at: string;
+  reporting_cycle: string;
+  total_lane_km_monitored: number;
+  city_average_pdi: number;
+  pdi_rating: "Optimal" | "Moderate" | "Critical";
+  total_incidents_logged: number;
+  resolved_incidents: number;
+  resolution_percentage: number;
+  critical_anomalies_active: number;
+  contractor_compliance_rate: number;
+  total_work_orders_dispatched: number;
+  work_orders_completed: number;
+  average_repair_turnaround_hrs: number;
+  estimated_cost_savings: string;
+  corridor_breakdown: CorridorPDI[];
+  contractor_leaderboard: ContractorLeaderboardItem[];
+}
+
+export interface RepairVerificationResult {
+  success: boolean;
+  repair_quality_score: number;
+  status: string;
+  verified_at: string;
+  inspector: string;
+  work_order: WorkOrder;
+  incident?: Incident;
 }
 
 export interface Analytics {
@@ -303,12 +382,37 @@ export const api = {
     });
     return handleApiResponse(res, "Failed to submit incident report");
   },
+
+  async getCorridorAnalytics(): Promise<CorridorAnalyticsResponse> {
+    const res = await fetch(`${BASE_URL}/api/analytics/corridors`, {
+      headers: { ...authHeaders() },
+    });
+    return handleApiResponse(res, "Failed to fetch corridor analytics");
+  },
+
+  async verifyRepair(orderId: number, data: FormData): Promise<RepairVerificationResult> {
+    const res = await fetch(`${BASE_URL}/api/workorders/${orderId}/verify`, {
+      method: "POST",
+      headers: { ...authHeaders() },
+      body: data,
+    });
+    return handleApiResponse(res, "Failed to verify repair");
+  },
+
+  async getAuditSummary(): Promise<AuditSummary> {
+    const res = await fetch(`${BASE_URL}/api/reports/audit-summary`, {
+      headers: { ...authHeaders() },
+    });
+    return handleApiResponse(res, "Failed to generate executive audit report");
+  },
 };
 
 // ─── WebSocket ─────────────────────────────────────────────────────────────
 export type WSEvent =
-  | { event: "new_incident";    data: Incident }
-  | { event: "incident_updated"; data: Incident };
+  | { event: "new_incident";        data: Incident }
+  | { event: "incident_updated";    data: Incident }
+  | { event: "incident_resolved";   data: Incident }
+  | { event: "work_order_verified"; data: WorkOrder };
 
 export function connectWebSocket(
   onMessage: (e: WSEvent) => void,

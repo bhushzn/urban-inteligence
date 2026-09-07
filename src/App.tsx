@@ -8,6 +8,9 @@ import LoginModal from "./components/LoginModal";
 import { ProjectShowcaseModal } from "./components/ProjectShowcaseModal";
 import { WorkOrderModal } from "./components/WorkOrderModal";
 import { CitizenPortalModal } from "./components/CitizenPortalModal";
+import { CorridorAnalyticsModal } from "./components/CorridorAnalyticsModal";
+import { RepairVerificationModal } from "./components/RepairVerificationModal";
+import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { api, connectWebSocket, getStoredUser } from "./api";
 import type { Incident, Analytics, WSEvent, User } from "./api";
 import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotificationPermission } from "./utils/audioAlert";
@@ -21,7 +24,10 @@ export default function App() {
   const [showLogin,      setShowLogin]      = useState(false);
   const [showShowcase,   setShowShowcase]   = useState(false);
   const [showCitizenPortal, setShowCitizenPortal] = useState(false);
+  const [showPDIModal,   setShowPDIModal]   = useState(false);
+  const [showExecReport, setShowExecReport] = useState(false);
   const [dispatchIncidentTarget, setDispatchIncidentTarget] = useState<Incident | null>(null);
+  const [verifyIncidentTarget,   setVerifyIncidentTarget]   = useState<Incident | null>(null);
   const [user,           setUser]           = useState<User | null>(() => getStoredUser());
   const [soundEnabled,   setSoundEnabled]   = useState(true);
   const [exportToast,    setExportToast]    = useState(false);
@@ -72,8 +78,9 @@ export default function App() {
 
           // Refresh analytics
           api.getAnalytics().then(setAnalytics).catch(() => {});
-        } else if (event.event === "incident_updated") {
+        } else if (event.event === "incident_updated" || event.event === "incident_resolved") {
           setIncidents(prev => prev.map(i => i.id === event.data.id ? event.data : i));
+          api.getAnalytics().then(setAnalytics).catch(() => {});
         }
       },
       () => setWsConnected(true),
@@ -172,6 +179,36 @@ export default function App() {
         onReportSubmitted={loadAll}
       />
 
+      {/* Corridor PDI Predictive Deterioration Modal */}
+      <CorridorAnalyticsModal
+        isOpen={showPDIModal}
+        onClose={() => setShowPDIModal(false)}
+        onSelectCorridor={(coords) => {
+          const matching = incidents.find(i => Math.abs(i.lat - coords[0]) < 0.05);
+          if (matching) setActiveIncident(matching);
+        }}
+      />
+
+      {/* Executive Municipal Audit Report Modal */}
+      <ExecutiveReportModal
+        isOpen={showExecReport}
+        onClose={() => setShowExecReport(false)}
+      />
+
+      {/* Contractor Before/After Proof of Work Verification Modal */}
+      {verifyIncidentTarget && (
+        <RepairVerificationModal
+          incident={verifyIncidentTarget}
+          isOpen={!!verifyIncidentTarget}
+          onClose={() => setVerifyIncidentTarget(null)}
+          onVerificationComplete={(result) => {
+            loadAll();
+            setNotification(`✅ Repair Verified: ${result.repair_quality_score}% Compaction Quality!`);
+            setTimeout(() => setNotification(null), 4000);
+          }}
+        />
+      )}
+
       {/* Contractor SLA Work Order Modal */}
       {dispatchIncidentTarget && (
         <WorkOrderModal
@@ -195,6 +232,8 @@ export default function App() {
         }}
         onOpenShowcase={() => setShowShowcase(true)}
         onOpenCitizenPortal={() => setShowCitizenPortal(true)}
+        onOpenPDI={() => setShowPDIModal(true)}
+        onOpenExecutiveReport={() => setShowExecReport(true)}
       />
 
       {/* Main */}
@@ -226,6 +265,7 @@ export default function App() {
                 onVerify={handleVerify}
                 onResolve={handleResolve}
                 onDispatch={(inc) => setDispatchIncidentTarget(inc)}
+                onVerifyRepair={(inc) => setVerifyIncidentTarget(inc)}
                 onOpenLogin={() => setShowLogin(true)}
               />
             </div>

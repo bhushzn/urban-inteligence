@@ -11,9 +11,22 @@ interface Props {
   onLogout: () => void;
   onOpenShowcase?: () => void;
   onOpenCitizenPortal?: () => void;
+  onOpenPDI?: () => void;
+  onOpenExecutiveReport?: () => void;
 }
 
-export default function Navbar({ onExport, onReport, analytics, user, onLoginClick, onLogout, onOpenShowcase, onOpenCitizenPortal }: Props) {
+export default function Navbar({
+  onExport,
+  onReport,
+  analytics,
+  user,
+  onLoginClick,
+  onLogout,
+  onOpenShowcase,
+  onOpenCitizenPortal,
+  onOpenPDI,
+  onOpenExecutiveReport,
+}: Props) {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000);
@@ -93,6 +106,22 @@ export default function Navbar({ onExport, onReport, analytics, user, onLoginCli
           >
             <FileBarChart2 className="w-4 h-4" />
             Export CSV
+          </button>
+          <button
+            onClick={onOpenPDI}
+            title="Pavement Distress Index & Predictive Corridor Analytics"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-sm font-semibold hover:bg-indigo-500/20 hover:border-indigo-400/50 transition-all duration-200"
+          >
+            <span>📊</span>
+            <span className="hidden md:inline">Corridor PDI</span>
+          </button>
+          <button
+            onClick={onOpenExecutiveReport}
+            title="Official BMC Pavement Quality & SLA Audit Report"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm font-semibold hover:bg-amber-500/20 hover:border-amber-400/50 transition-all duration-200"
+          >
+            <span>📋</span>
+            <span className="hidden md:inline">Exec Report</span>
           </button>
           <button
             onClick={onOpenShowcase}

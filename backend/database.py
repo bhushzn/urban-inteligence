@@ -255,7 +255,12 @@ async def init_db(password_hasher=None):
     for col_sql in [
         "ALTER TABLE incidents ADD COLUMN dispatched_to TEXT",
         "ALTER TABLE incidents ADD COLUMN sla_deadline TEXT",
-        "ALTER TABLE incidents ADD COLUMN dispatch_notes TEXT"
+        "ALTER TABLE incidents ADD COLUMN dispatch_notes TEXT",
+        "ALTER TABLE incidents ADD COLUMN after_image_path TEXT",
+        "ALTER TABLE incidents ADD COLUMN repair_score REAL",
+        "ALTER TABLE work_orders ADD COLUMN after_image_path TEXT",
+        "ALTER TABLE work_orders ADD COLUMN repair_score REAL",
+        "ALTER TABLE work_orders ADD COLUMN verified_at TEXT"
     ]:
         try:
             await execute(col_sql)
