@@ -1,0 +1,20 @@
+{
+  "name": "UrbanIntel AI — Smart City Command Center",
+  "short_name": "UrbanIntel",
+  "description": "Autonomous Road Anomaly, Fleet Sensing & Municipal Dispatch Platform for Smart Cities (SIH PS 26124)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1e",
+  "theme_color": "#0ea5e9",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "government", "navigation"],
+  "lang": "en"
+}
