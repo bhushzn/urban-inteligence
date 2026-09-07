@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Activity, AlertTriangle, Bus, FileBarChart2, Radio, Clock, PlusCircle, LogIn, LogOut, ShieldCheck, HardHat } from "lucide-react";
+import { Activity, AlertTriangle, Bus, FileBarChart2, Radio, Clock, PlusCircle, LogIn, LogOut, ShieldCheck, HardHat, Sparkles } from "lucide-react";
 import type { Analytics, User } from "../api";
 
 interface Props {
@@ -9,9 +9,10 @@ interface Props {
   user: User | null;
   onLoginClick: () => void;
   onLogout: () => void;
+  onOpenShowcase?: () => void;
 }
 
-export default function Navbar({ onExport, onReport, analytics, user, onLoginClick, onLogout }: Props) {
+export default function Navbar({ onExport, onReport, analytics, user, onLoginClick, onLogout, onOpenShowcase }: Props) {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000);
@@ -83,6 +84,14 @@ export default function Navbar({ onExport, onReport, analytics, user, onLoginCli
           >
             <FileBarChart2 className="w-4 h-4" />
             Export CSV
+          </button>
+          <button
+            onClick={onOpenShowcase}
+            title="Project Overview & SIH 26124 Details"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-sm font-semibold hover:bg-purple-500/20 hover:border-purple-400/50 transition-all duration-200"
+          >
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span className="hidden lg:inline">SIH 26124</span>
           </button>
 
           {/* User Auth Section */}

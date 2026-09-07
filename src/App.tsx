@@ -5,6 +5,7 @@ import IncidentFeed from "./components/IncidentFeed";
 import AnalyticsPanel from "./components/AnalyticsPanel";
 import ReportModal from "./components/ReportModal";
 import LoginModal from "./components/LoginModal";
+import { ProjectShowcaseModal } from "./components/ProjectShowcaseModal";
 import { api, connectWebSocket, getStoredUser } from "./api";
 import type { Incident, Analytics, WSEvent, User } from "./api";
 import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotificationPermission } from "./utils/audioAlert";
@@ -16,6 +17,7 @@ export default function App() {
   const [wsConnected,    setWsConnected]    = useState(false);
   const [showReport,     setShowReport]     = useState(false);
   const [showLogin,      setShowLogin]      = useState(false);
+  const [showShowcase,   setShowShowcase]   = useState(false);
   const [user,           setUser]           = useState<User | null>(() => getStoredUser());
   const [soundEnabled,   setSoundEnabled]   = useState(true);
   const [exportToast,    setExportToast]    = useState(false);
@@ -153,6 +155,12 @@ export default function App() {
         />
       )}
 
+      {/* Project Showcase / SIH 26124 Modal */}
+      <ProjectShowcaseModal
+        isOpen={showShowcase}
+        onClose={() => setShowShowcase(false)}
+      />
+
       {/* Navbar */}
       <Navbar
         onExport={handleExport}
@@ -164,6 +172,7 @@ export default function App() {
           api.logout();
           setUser(null);
         }}
+        onOpenShowcase={() => setShowShowcase(true)}
       />
 
       {/* Main */}
