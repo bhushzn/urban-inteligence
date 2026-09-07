@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { Incident } from "../api";
+import type { Incident, SafeRouteResponse } from "../api";
 import { resolveImageUrl } from "../api";
 
 // Fix Leaflet default icon issue with Vite
@@ -98,6 +98,8 @@ interface Props {
   onMarkerClick: (inc: Incident) => void;
   mapLayers: { heatmap: boolean; fleet: boolean; potholes: boolean };
   onToggleLayer: (layer: "heatmap" | "fleet" | "potholes") => void;
+  activeRoute?: SafeRouteResponse | null;
+  onClearRoute?: () => void;
 }
 
 // Bhopal city centre
@@ -122,7 +124,15 @@ const INITIAL_BUSES: BusVehicle[] = [
   { id: "b4", number: "412", route: "Habibganj ➔ Shivaji Nagar", lat: 23.8180, lng: 77.7760, speed: 38, deltaLat: -0.0004, deltaLng: -0.0006 },
 ];
 
-export default function MapView({ incidents, activeIncident, onMarkerClick, mapLayers, onToggleLayer }: Props) {
+export default function MapView({
+  incidents,
+  activeIncident,
+  onMarkerClick,
+  mapLayers,
+  onToggleLayer,
+  activeRoute,
+  onClearRoute,
+}: Props) {
   const mapRef = useRef<L.Map | null>(null);
   const [buses, setBuses] = useState<BusVehicle[]>(INITIAL_BUSES);
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
@@ -305,6 +315,30 @@ export default function MapView({ incidents, activeIncident, onMarkerClick, mapL
               </Popup>
             </Marker>
           ))}
+          {/* Safe Route Polylines */}
+          {activeRoute && (
+            <>
+              <Polyline
+                positions={activeRoute.safest_route.waypoints}
+                pathOptions={{
+                  color: "#10b981",
+                  weight: 6,
+                  opacity: 0.9,
+                  lineCap: "round",
+                  lineJoin: "round",
+                }}
+              />
+              <Polyline
+                positions={activeRoute.fastest_route.waypoints}
+                pathOptions={{
+                  color: "#f43f5e",
+                  weight: 4,
+                  dashArray: "6, 8",
+                  opacity: 0.65,
+                }}
+              />
+            </>
+          )}
         </MapContainer>
 
         {/* Map Controls overlay */}
@@ -331,6 +365,29 @@ export default function MapView({ incidents, activeIncident, onMarkerClick, mapL
             </button>
           ))}
         </div>
+
+        {/* Active Route Floating Banner */}
+        {activeRoute && (
+          <div className="absolute top-14 left-4 z-[1000] glass-lighter rounded-xl px-4 py-2 flex items-center gap-3 border border-emerald-500/40 fade-in-up">
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                <span className="text-emerald-400">🛡️ Safe Route Active:</span>
+                <span>{activeRoute.origin} ➔ {activeRoute.destination}</span>
+              </div>
+              <p className="text-[10px] text-emerald-300">
+                {activeRoute.safest_route.smoothness_score}% Smoothness • Bypasses All Severe Hazards
+              </p>
+            </div>
+            {onClearRoute && (
+              <button
+                onClick={onClearRoute}
+                className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-semibold text-slate-300 transition-colors"
+              >
+                Clear Route
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Active incident info */}
         {activeIncident && (

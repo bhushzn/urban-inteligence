@@ -11,8 +11,11 @@ import { CitizenPortalModal } from "./components/CitizenPortalModal";
 import { CorridorAnalyticsModal } from "./components/CorridorAnalyticsModal";
 import { RepairVerificationModal } from "./components/RepairVerificationModal";
 import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
+import { SafeRouteModal } from "./components/SafeRouteModal";
+import { LiveDashcamModal } from "./components/LiveDashcamModal";
+import { CivicKarmaModal } from "./components/CivicKarmaModal";
 import { api, connectWebSocket, getStoredUser } from "./api";
-import type { Incident, Analytics, WSEvent, User } from "./api";
+import type { Incident, Analytics, WSEvent, User, SafeRouteResponse } from "./api";
 import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotificationPermission } from "./utils/audioAlert";
 
 export default function App() {
@@ -26,6 +29,10 @@ export default function App() {
   const [showCitizenPortal, setShowCitizenPortal] = useState(false);
   const [showPDIModal,   setShowPDIModal]   = useState(false);
   const [showExecReport, setShowExecReport] = useState(false);
+  const [showSafeRouteModal, setShowSafeRouteModal] = useState(false);
+  const [showDashcamModal,   setShowDashcamModal]   = useState(false);
+  const [showKarmaModal,     setShowKarmaModal]     = useState(false);
+  const [activeSafeRoute,    setActiveSafeRoute]    = useState<SafeRouteResponse | null>(null);
   const [dispatchIncidentTarget, setDispatchIncidentTarget] = useState<Incident | null>(null);
   const [verifyIncidentTarget,   setVerifyIncidentTarget]   = useState<Incident | null>(null);
   const [user,           setUser]           = useState<User | null>(() => getStoredUser());
@@ -209,6 +216,33 @@ export default function App() {
         />
       )}
 
+      {/* Safe-Route Hazard-Aware Navigation Modal */}
+      <SafeRouteModal
+        isOpen={showSafeRouteModal}
+        onClose={() => setShowSafeRouteModal(false)}
+        onApplyRouteToMap={(route) => {
+          setActiveSafeRoute(route);
+          setNotification(`🧭 Safe Route Applied: ${route.safest_route.smoothness_score}% Smoothness!`);
+          setTimeout(() => setNotification(null), 4000);
+        }}
+      />
+
+      {/* Live Transit Fleet Edge AI Dashcam Stream Modal */}
+      <LiveDashcamModal
+        isOpen={showDashcamModal}
+        onClose={() => setShowDashcamModal(false)}
+        onSnapshotReport={() => {
+          setShowDashcamModal(false);
+          setShowReport(true);
+        }}
+      />
+
+      {/* Civic Karma & Citizen Rewards Leaderboard Modal */}
+      <CivicKarmaModal
+        isOpen={showKarmaModal}
+        onClose={() => setShowKarmaModal(false)}
+      />
+
       {/* Contractor SLA Work Order Modal */}
       {dispatchIncidentTarget && (
         <WorkOrderModal
@@ -234,6 +268,9 @@ export default function App() {
         onOpenCitizenPortal={() => setShowCitizenPortal(true)}
         onOpenPDI={() => setShowPDIModal(true)}
         onOpenExecutiveReport={() => setShowExecReport(true)}
+        onOpenSafeRoute={() => setShowSafeRouteModal(true)}
+        onOpenDashcam={() => setShowDashcamModal(true)}
+        onOpenKarma={() => setShowKarmaModal(true)}
       />
 
       {/* Main */}
@@ -247,6 +284,8 @@ export default function App() {
               onMarkerClick={handleSelectIncident}
               mapLayers={mapLayers}
               onToggleLayer={toggleLayer}
+              activeRoute={activeSafeRoute}
+              onClearRoute={() => setActiveSafeRoute(null)}
             />
             <AnalyticsPanel analytics={analytics} />
           </div>

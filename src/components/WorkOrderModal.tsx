@@ -186,22 +186,45 @@ export const WorkOrderModal: React.FC<Props> = ({ incident, isOpen, onClose, onD
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
               <button
                 type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors"
+                onClick={() => {
+                  const googleMapsUrl = `https://maps.google.com/?q=${incident.lat},${incident.lng}`;
+                  const msg = encodeURIComponent(
+                    `🚨 *URGENT MUNICIPAL WORK ORDER*\n` +
+                    `🏢 Agency: ${CONTRACTORS[contractorIndex].name}\n` +
+                    `📍 Location: ${incident.location} (${incident.ward})\n` +
+                    `⚠️ Hazard: ${incident.type} (${incident.severity} Priority)\n` +
+                    `⏳ SLA: ${slaHours} Hours\n` +
+                    `🗺️ Navigation: ${googleMapsUrl}`
+                  );
+                  window.open(`https://wa.me/?text=${msg}`, "_blank");
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 text-xs font-semibold transition-all"
+                title="Send directly to contractor on WhatsApp"
               >
-                Cancel
+                <span>📲</span>
+                <span>Dispatch via WhatsApp</span>
               </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>{submitting ? "Dispatching..." : "Confirm Dispatch Order"}</span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{submitting ? "Dispatching..." : "Confirm Dispatch Order"}</span>
+                </button>
+              </div>
             </div>
           </form>
         )}

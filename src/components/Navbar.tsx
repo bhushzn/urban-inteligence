@@ -13,6 +13,9 @@ interface Props {
   onOpenCitizenPortal?: () => void;
   onOpenPDI?: () => void;
   onOpenExecutiveReport?: () => void;
+  onOpenSafeRoute?: () => void;
+  onOpenDashcam?: () => void;
+  onOpenKarma?: () => void;
 }
 
 export default function Navbar({
@@ -26,6 +29,9 @@ export default function Navbar({
   onOpenCitizenPortal,
   onOpenPDI,
   onOpenExecutiveReport,
+  onOpenSafeRoute,
+  onOpenDashcam,
+  onOpenKarma,
 }: Props) {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
@@ -122,6 +128,30 @@ export default function Navbar({
           >
             <span>📋</span>
             <span className="hidden md:inline">Exec Report</span>
+          </button>
+          <button
+            onClick={onOpenSafeRoute}
+            title="Safe-Route Hazard-Aware Emergency Navigation"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-sm font-semibold hover:bg-blue-500/20 hover:border-blue-400/50 transition-all duration-200"
+          >
+            <span>🧭</span>
+            <span className="hidden md:inline">Safe Route</span>
+          </button>
+          <button
+            onClick={onOpenDashcam}
+            title="Live Transit Fleet Edge AI Dashcam Stream"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm font-semibold hover:bg-rose-500/20 hover:border-rose-400/50 transition-all duration-200"
+          >
+            <span>📹</span>
+            <span className="hidden md:inline">Dashcam</span>
+          </button>
+          <button
+            onClick={onOpenKarma}
+            title="Citizen Crowdsourced Karma & Rewards Leaderboard"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-semibold hover:bg-emerald-500/20 hover:border-emerald-400/50 transition-all duration-200"
+          >
+            <span>🌟</span>
+            <span className="hidden md:inline">Civic Karma</span>
           </button>
           <button
             onClick={onOpenShowcase}

@@ -127,6 +127,54 @@ export interface RepairVerificationResult {
   incident?: Incident;
 }
 
+export interface RouteOption {
+  name: string;
+  distance_km: number;
+  duration_minutes: number;
+  hazards_encountered: number;
+  critical_potholes: number;
+  smoothness_score: number;
+  risk_score: number;
+  status: string;
+  waypoints: [number, number][];
+  warning?: string;
+  recommendation?: string;
+}
+
+export interface SafeRouteResponse {
+  origin: string;
+  destination: string;
+  vehicle_type: string;
+  origin_coords: [number, number];
+  destination_coords: [number, number];
+  fastest_route: RouteOption;
+  safest_route: RouteOption;
+  turn_guidance: { step: number; instruction: string; dist: string }[];
+}
+
+export interface ContractorNotificationResponse {
+  success: boolean;
+  work_order_id: number;
+  contractor: string;
+  channel: string;
+  whatsapp_url: string;
+  gps_navigation_url: string;
+  message_preview: string;
+  sent_at: string;
+}
+
+export interface KarmaProfile {
+  citizen_name: string;
+  karma_points: number;
+  tier: string;
+  total_reports_submitted: number;
+  verified_reports_count: number;
+  resolved_reports_count: number;
+  co2_reduction_kg: number;
+  leaderboard_rank: number;
+  available_perks: { id: string; title: string; cost_points: number; status: string }[];
+}
+
 export interface Analytics {
   total: number;
   resolved: number;
@@ -404,6 +452,30 @@ export const api = {
       headers: { ...authHeaders() },
     });
     return handleApiResponse(res, "Failed to generate executive audit report");
+  },
+
+  async calculateSafeRoute(origin: string, destination: string, vehicleType: string = "ambulance"): Promise<SafeRouteResponse> {
+    const res = await fetch(`${BASE_URL}/api/routing/safe-route`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ origin, destination, vehicle_type: vehicleType }),
+    });
+    return handleApiResponse(res, "Failed to calculate safe route");
+  },
+
+  async notifyContractor(orderId: number): Promise<ContractorNotificationResponse> {
+    const res = await fetch(`${BASE_URL}/api/workorders/${orderId}/notify`, {
+      method: "POST",
+      headers: { ...authHeaders() },
+    });
+    return handleApiResponse(res, "Failed to dispatch contractor notification");
+  },
+
+  async getCitizenKarma(): Promise<KarmaProfile> {
+    const res = await fetch(`${BASE_URL}/api/citizen/karma`, {
+      headers: { ...authHeaders() },
+    });
+    return handleApiResponse(res, "Failed to fetch citizen karma profile");
   },
 };
 
