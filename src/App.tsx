@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Navbar from "./components/Navbar";
 import MapView from "./components/MapView";
 import IncidentFeed from "./components/IncidentFeed";
 import AnalyticsPanel from "./components/AnalyticsPanel";
 import ReportModal from "./components/ReportModal";
-import { api, connectWebSocket } from "./api";
-import type { Incident, Analytics, WSEvent } from "./api";
+import LoginModal from "./components/LoginModal";
+import { api, connectWebSocket, getStoredUser } from "./api";
+import type { Incident, Analytics, WSEvent, User } from "./api";
+import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotificationPermission } from "./utils/audioAlert";
 
 export default function App() {
   const [incidents,      setIncidents]      = useState<Incident[]>([]);
@@ -13,9 +15,23 @@ export default function App() {
   const [activeIncident, setActiveIncident] = useState<Incident | null>(null);
   const [wsConnected,    setWsConnected]    = useState(false);
   const [showReport,     setShowReport]     = useState(false);
+  const [showLogin,      setShowLogin]      = useState(false);
+  const [user,           setUser]           = useState<User | null>(() => getStoredUser());
+  const [soundEnabled,   setSoundEnabled]   = useState(true);
   const [exportToast,    setExportToast]    = useState(false);
   const [mapLayers,      setMapLayers]      = useState({ heatmap: false, fleet: true, potholes: true });
   const [notification,   setNotification]   = useState<string | null>(null);
+
+  const soundRef = useRef(soundEnabled);
+  soundRef.current = soundEnabled;
+
+  // Verify auth session on load
+  useEffect(() => {
+    api.getMe().then((currUser) => {
+      setUser(currUser);
+    }).catch(() => {});
+    requestBrowserNotificationPermission();
+  }, []);
 
   // Load incidents & analytics
   async function loadAll() {
@@ -38,6 +54,16 @@ export default function App() {
           setIncidents(prev => [event.data, ...prev]);
           setNotification(`🚨 New: ${event.data.type} in ${event.data.ward}`);
           setTimeout(() => setNotification(null), 4000);
+
+          // Audio chime & browser push
+          if (soundRef.current) {
+            playIncidentAlertSound(event.data.severity);
+          }
+          showBrowserNotification(
+            `🚨 ${event.data.type} (${event.data.severity})`,
+            `${event.data.ward} • ${event.data.location}`
+          );
+
           // Refresh analytics
           api.getAnalytics().then(setAnalytics).catch(() => {});
         } else if (event.event === "incident_updated") {
@@ -116,11 +142,28 @@ export default function App() {
         <ReportModal onClose={() => setShowReport(false)} onCreated={loadAll} />
       )}
 
+      {/* Login Modal */}
+      {showLogin && (
+        <LoginModal
+          onClose={() => setShowLogin(false)}
+          onSuccess={(loggedInUser) => {
+            setUser(loggedInUser);
+            setShowLogin(false);
+          }}
+        />
+      )}
+
       {/* Navbar */}
       <Navbar
         onExport={handleExport}
         onReport={() => setShowReport(true)}
         analytics={analytics}
+        user={user}
+        onLoginClick={() => setShowLogin(true)}
+        onLogout={() => {
+          api.logout();
+          setUser(null);
+        }}
       />
 
       {/* Main */}
@@ -145,9 +188,13 @@ export default function App() {
                 incidents={incidents}
                 activeId={activeIncident?.id ?? null}
                 wsConnected={wsConnected}
+                user={user}
+                soundEnabled={soundEnabled}
+                onToggleSound={() => setSoundEnabled(prev => !prev)}
                 onSelect={handleSelectIncident}
                 onVerify={handleVerify}
                 onResolve={handleResolve}
+                onOpenLogin={() => setShowLogin(true)}
               />
             </div>
           </div>

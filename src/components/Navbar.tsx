@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
-import { Activity, AlertTriangle, Bus, FileBarChart2, Radio, Clock, PlusCircle } from "lucide-react";
-import type { Analytics } from "../api";
+import { Activity, AlertTriangle, Bus, FileBarChart2, Radio, Clock, PlusCircle, LogIn, LogOut, ShieldCheck, HardHat } from "lucide-react";
+import type { Analytics, User } from "../api";
 
 interface Props {
   onExport: () => void;
   onReport: () => void;
   analytics: Analytics | null;
+  user: User | null;
+  onLoginClick: () => void;
+  onLogout: () => void;
 }
 
-export default function Navbar({ onExport, onReport, analytics }: Props) {
+export default function Navbar({ onExport, onReport, analytics, user, onLoginClick, onLogout }: Props) {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000);
@@ -81,6 +84,44 @@ export default function Navbar({ onExport, onReport, analytics }: Props) {
             <FileBarChart2 className="w-4 h-4" />
             Export CSV
           </button>
+
+          {/* User Auth Section */}
+          {user ? (
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-700/60">
+              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                  user.role === "admin" 
+                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" 
+                    : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                }`}>
+                  {user.role === "admin" ? <ShieldCheck className="w-4 h-4" /> : <HardHat className="w-4 h-4" />}
+                </div>
+                <div className="text-left hidden sm:block">
+                  <p className="text-xs font-semibold text-white leading-tight">{user.name}</p>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                    user.role === "admin" ? "text-cyan-400" : "text-amber-400"
+                  }`}>
+                    {user.role === "admin" ? "Admin" : "Field Agent"}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={onLogout}
+                title="Sign Out"
+                className="p-2 rounded-xl bg-slate-800/40 hover:bg-red-500/10 border border-slate-700/40 hover:border-red-500/30 text-slate-400 hover:text-red-400 transition-all duration-200"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onLoginClick}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm shadow-md shadow-cyan-500/20 transition-all duration-200 ml-1"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </button>
+          )}
         </div>
       </div>
     </header>

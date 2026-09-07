@@ -10,13 +10,18 @@ import base64
 import time
 from datetime import datetime
 from typing import List, Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
+from pydantic import BaseModel
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import aiosqlite
 from ultralytics import YOLO
 import cv2
 import numpy as np
+from auth import (
+    init_users_db, get_current_user, require_admin, require_auth,
+    hash_password, verify_password, create_access_token
+)
 
 # ─── App Setup ──────────────────────────────────────────────────────────────
 app = FastAPI(title="UrbanIntel AI API", version="1.0.0")
@@ -141,6 +146,7 @@ async def startup():
         yolo_model = None
     
     await init_db()
+    await init_users_db()
     asyncio.create_task(auto_incident_generator())
 
 # ─── Helper ─────────────────────────────────────────────────────────────────
@@ -281,6 +287,87 @@ async def auto_incident_generator():
         if row:
             await manager.broadcast({"event": "new_incident", "data": incident_row_to_dict(row)})
         await asyncio.sleep(random.randint(25, 45))
+
+# ─── Auth Models & Routes ───────────────────────────────────────────────────
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    name: str
+    role: Optional[str] = "field_agent"
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest):
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT id, username, password, name, role FROM users WHERE username = ?", (req.username.strip(),)) as cur:
+            user = await cur.fetchone()
+    
+    if not user or not verify_password(req.password, user[2]):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    
+    token_data = {
+        "user_id": user[0],
+        "username": user[1],
+        "name": user[3],
+        "role": user[4]
+    }
+    token = create_access_token(token_data)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user[0],
+            "username": user[1],
+            "name": user[3],
+            "role": user[4]
+        }
+    }
+
+@app.post("/api/auth/register")
+async def register(req: RegisterRequest):
+    if len(req.username.strip()) < 3 or len(req.password) < 4:
+        raise HTTPException(status_code=400, detail="Username and password must be at least 3 and 4 characters.")
+    
+    role = req.role if req.role in ("admin", "field_agent") else "field_agent"
+    hashed = hash_password(req.password)
+    
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute(
+                "INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)",
+                (req.username.strip(), hashed, req.name.strip(), role)
+            )
+            await db.commit()
+            user_id = cur.lastrowid
+    except aiosqlite.IntegrityError:
+        raise HTTPException(status_code=400, detail="Username already exists")
+        
+    token_data = {
+        "user_id": user_id,
+        "username": req.username.strip(),
+        "name": req.name.strip(),
+        "role": role
+    }
+    token = create_access_token(token_data)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user_id,
+            "username": req.username.strip(),
+            "name": req.name.strip(),
+            "role": role
+        }
+    }
+
+@app.get("/api/auth/me")
+async def get_me(user = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {"user": user}
 
 # ─── Routes ─────────────────────────────────────────────────────────────────
 
