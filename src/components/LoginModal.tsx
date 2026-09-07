@@ -52,7 +52,7 @@ export default function LoginModal({ onClose, onSuccess }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
       <div className="glass glow-cyan w-full max-w-md rounded-2xl border border-cyan-500/30 p-6 relative overflow-hidden shadow-2xl">
         {/* Background glow orb */}
         <div className="absolute -top-12 -right-12 w-36 h-36 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />

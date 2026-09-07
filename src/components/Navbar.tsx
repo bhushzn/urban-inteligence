@@ -42,7 +42,7 @@ export default function Navbar({
   const dateStr = time.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
   return (
-    <header className="glass glow-cyan sticky top-0 z-50 px-6 py-3 rounded-2xl mx-4 mt-4">
+    <header className="glass glow-cyan sticky top-0 z-30 px-6 py-3 rounded-2xl mx-4 mt-4">
       <div className="flex items-center justify-between gap-4">
         {/* Logo */}
         <div className="flex items-center gap-3 shrink-0">

@@ -157,6 +157,71 @@ export default function App() {
         </div>
       )}
 
+      {/* Navbar */}
+      <Navbar
+        onExport={handleExport}
+        onReport={() => setShowReport(true)}
+        analytics={analytics}
+        user={user}
+        onLoginClick={() => setShowLogin(true)}
+        onLogout={() => {
+          api.logout();
+          setUser(null);
+        }}
+        onOpenShowcase={() => setShowShowcase(true)}
+        onOpenCitizenPortal={() => setShowCitizenPortal(true)}
+        onOpenPDI={() => setShowPDIModal(true)}
+        onOpenExecutiveReport={() => setShowExecReport(true)}
+        onOpenSafeRoute={() => setShowSafeRouteModal(true)}
+        onOpenDashcam={() => setShowDashcamModal(true)}
+        onOpenKarma={() => setShowKarmaModal(true)}
+      />
+
+      {/* Main */}
+      <main className="px-4 pb-6 mt-4 relative z-10">
+        <div className="flex gap-4" style={{ minHeight: "520px" }}>
+          {/* Left — Map + Analytics (70%) */}
+          <div className="flex flex-col gap-4" style={{ flex: "0 0 70%" }}>
+            <MapView
+              incidents={incidents}
+              activeIncident={activeIncident}
+              onMarkerClick={handleSelectIncident}
+              mapLayers={mapLayers}
+              onToggleLayer={toggleLayer}
+              activeRoute={activeSafeRoute}
+              onClearRoute={() => setActiveSafeRoute(null)}
+            />
+            <AnalyticsPanel analytics={analytics} />
+          </div>
+
+          {/* Right — Incident Feed (30%) */}
+          <div style={{ flex: "0 0 30%" }} className="flex flex-col">
+            <div className="sticky top-24" style={{ maxHeight: "calc(100vh - 7rem)", display: "flex", flexDirection: "column" }}>
+              <IncidentFeed
+                incidents={incidents}
+                activeId={activeIncident?.id ?? null}
+                wsConnected={wsConnected}
+                user={user}
+                soundEnabled={soundEnabled}
+                onToggleSound={() => setSoundEnabled(prev => !prev)}
+                onSelect={handleSelectIncident}
+                onVerify={handleVerify}
+                onResolve={handleResolve}
+                onDispatch={(inc) => setDispatchIncidentTarget(inc)}
+                onVerifyRepair={(inc) => setVerifyIncidentTarget(inc)}
+                onOpenLogin={() => setShowLogin(true)}
+              />
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <div className="text-center pb-4 text-xs text-slate-600">
+        UrbanIntel AI • Smart India Hackathon 2024 • Problem Statement 26124 • Built with ❤️ for civic safety
+      </div>
+
+      {/* --- ALL MODALS (Rendered at Root level with z-[9999]) --- */}
+
       {/* Report Modal */}
       {showReport && (
         <ReportModal onClose={() => setShowReport(false)} onCreated={loadAll} />
@@ -252,69 +317,6 @@ export default function App() {
           onDispatched={loadAll}
         />
       )}
-
-      {/* Navbar */}
-      <Navbar
-        onExport={handleExport}
-        onReport={() => setShowReport(true)}
-        analytics={analytics}
-        user={user}
-        onLoginClick={() => setShowLogin(true)}
-        onLogout={() => {
-          api.logout();
-          setUser(null);
-        }}
-        onOpenShowcase={() => setShowShowcase(true)}
-        onOpenCitizenPortal={() => setShowCitizenPortal(true)}
-        onOpenPDI={() => setShowPDIModal(true)}
-        onOpenExecutiveReport={() => setShowExecReport(true)}
-        onOpenSafeRoute={() => setShowSafeRouteModal(true)}
-        onOpenDashcam={() => setShowDashcamModal(true)}
-        onOpenKarma={() => setShowKarmaModal(true)}
-      />
-
-      {/* Main */}
-      <main className="px-4 pb-6 mt-4 relative z-10">
-        <div className="flex gap-4" style={{ minHeight: "520px" }}>
-          {/* Left — Map + Analytics (70%) */}
-          <div className="flex flex-col gap-4" style={{ flex: "0 0 70%" }}>
-            <MapView
-              incidents={incidents}
-              activeIncident={activeIncident}
-              onMarkerClick={handleSelectIncident}
-              mapLayers={mapLayers}
-              onToggleLayer={toggleLayer}
-              activeRoute={activeSafeRoute}
-              onClearRoute={() => setActiveSafeRoute(null)}
-            />
-            <AnalyticsPanel analytics={analytics} />
-          </div>
-
-          {/* Right — Incident Feed (30%) */}
-          <div style={{ flex: "0 0 30%" }} className="flex flex-col">
-            <div className="sticky top-24" style={{ maxHeight: "calc(100vh - 7rem)", display: "flex", flexDirection: "column" }}>
-              <IncidentFeed
-                incidents={incidents}
-                activeId={activeIncident?.id ?? null}
-                wsConnected={wsConnected}
-                user={user}
-                soundEnabled={soundEnabled}
-                onToggleSound={() => setSoundEnabled(prev => !prev)}
-                onSelect={handleSelectIncident}
-                onVerify={handleVerify}
-                onResolve={handleResolve}
-                onDispatch={(inc) => setDispatchIncidentTarget(inc)}
-                onVerifyRepair={(inc) => setVerifyIncidentTarget(inc)}
-                onOpenLogin={() => setShowLogin(true)}
-              />
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <div className="text-center pb-4 text-xs text-slate-600">
-        UrbanIntel AI • Smart India Hackathon 2024 • Problem Statement 26124 • Built with ❤️ for civic safety
-      </div>
     </div>
   );
 }
