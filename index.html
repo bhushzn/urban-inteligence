@@ -16,12 +16,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="modal-root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/sw.js").catch(() => {});
-        });
+        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            for (let registration of registrations) {
+              registration.unregister();
+            }
+          });
+        } else {
+          window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/sw.js").catch(() => {});
+          });
+        }
       }
     </script>
   </body>

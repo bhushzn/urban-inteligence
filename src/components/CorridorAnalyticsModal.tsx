@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../api";
 import type { CorridorAnalyticsResponse } from "../api";
 
@@ -75,8 +76,11 @@ export const CorridorAnalyticsModal: React.FC<CorridorAnalyticsModalProps> = ({
     0
   );
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+      style={{ zIndex: 999999 }}
+    >
       <div
         className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
         role="dialog"
@@ -388,6 +392,7 @@ export const CorridorAnalyticsModal: React.FC<CorridorAnalyticsModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.getElementById("modal-root") || document.body
   );
 };

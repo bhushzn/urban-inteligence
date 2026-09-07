@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Lock, User as UserIcon, Shield, Sparkles, AlertCircle, Loader2 } from "lucide-react";
 import { api, type User } from "../api";
 
@@ -51,8 +52,11 @@ export default function LoginModal({ onClose, onSuccess }: Props) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+      style={{ zIndex: 999999 }}
+    >
       <div className="glass glow-cyan w-full max-w-md rounded-2xl border border-cyan-500/30 p-6 relative overflow-hidden shadow-2xl">
         {/* Background glow orb */}
         <div className="absolute -top-12 -right-12 w-36 h-36 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -226,6 +230,7 @@ export default function LoginModal({ onClose, onSuccess }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.getElementById("modal-root") || document.body
   );
 }

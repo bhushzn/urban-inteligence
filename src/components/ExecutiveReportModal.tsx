@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../api";
 import type { AuditSummary } from "../api";
 
@@ -60,8 +61,11 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in print:p-0 print:bg-white">
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in print:p-0 print:bg-white"
+      style={{ zIndex: 999999 }}
+    >
       <div
         className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden print:border-0 print:shadow-none print:max-h-none print:w-full print:bg-white print:text-black"
         role="dialog"
@@ -271,6 +275,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.getElementById("modal-root") || document.body
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Send, Clock, MapPin, CheckCircle2 } from "lucide-react";
 import type { Incident } from "../api";
 import { api } from "../api";
@@ -57,8 +58,11 @@ export const WorkOrderModal: React.FC<Props> = ({ incident, isOpen, onClose, onD
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ zIndex: 999999 }}
+    >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative glass glow-cyan rounded-2xl w-full max-w-lg overflow-hidden border border-cyan-500/30 p-6 fade-in-up">
@@ -229,6 +233,7 @@ export const WorkOrderModal: React.FC<Props> = ({ incident, isOpen, onClose, onD
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.getElementById("modal-root") || document.body
   );
 };

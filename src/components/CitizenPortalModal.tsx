@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, UploadCloud, Sparkles, CheckCircle2, Loader2, Navigation } from "lucide-react";
 import { api } from "../api";
 import type { AIResult } from "../api";
@@ -23,18 +24,17 @@ export const CitizenPortalModal: React.FC<Props> = ({ isOpen, onClose, onReportS
   const [locationName, setLocationName] = useState("");
   const [ward, setWard] = useState("Ward 7");
   const [lat, setLat] = useState("23.8300");
-  const [lng, setLng] = useState("77.7900");
+  const [lng, setLng] = useState("77.7700");
   const [locating, setLocating] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [ticketId, setTicketId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  // Auto-detect browser GPS position
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
@@ -58,7 +58,6 @@ export const CitizenPortalModal: React.FC<Props> = ({ isOpen, onClose, onReportS
     );
   };
 
-  // Image Selection & Instant AI Preview
   const handleImageChange = async (file: File | null) => {
     if (!file) return;
     setImageFile(file);
@@ -70,7 +69,7 @@ export const CitizenPortalModal: React.FC<Props> = ({ isOpen, onClose, onReportS
       const result = await api.analyzeImage(file, category);
       setAiResult(result);
     } catch {
-      // Ignore preview failure, will submit anyway
+      // Fallback silent
     } finally {
       setAnalyzing(false);
     }
@@ -81,8 +80,11 @@ export const CitizenPortalModal: React.FC<Props> = ({ isOpen, onClose, onReportS
     setSubmitting(true);
     try {
       const form = new FormData();
-      form.append("type", aiResult ? aiResult.type : "Citizen Road Report");
-      form.append("severity", aiResult ? aiResult.severity : "Medium");
+      const incType = aiResult?.type || CATEGORIES.find((c) => c.id === category)?.label || "Road Hazard";
+      const severity = aiResult?.severity || "Medium";
+
+      form.append("type", incType);
+      form.append("severity", severity);
       form.append("lat", lat);
       form.append("lng", lng);
       form.append("ward", ward);
@@ -101,8 +103,11 @@ export const CitizenPortalModal: React.FC<Props> = ({ isOpen, onClose, onReportS
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ zIndex: 999999 }}
+    >
       <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
 
       <div className="relative glass glow-cyan rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 border border-emerald-500/30 fade-in-up">
@@ -296,6 +301,7 @@ export const CitizenPortalModal: React.FC<Props> = ({ isOpen, onClose, onReportS
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.getElementById("modal-root") || document.body
   );
 };
