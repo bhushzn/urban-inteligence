@@ -55,10 +55,36 @@ export default function Navbar({
   const [time, setTime] = useState(new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = () => {
+    if (menuTimeoutRef.current) {
+      clearTimeout(menuTimeoutRef.current);
+      menuTimeoutRef.current = null;
+    }
+    setMenuOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (menuTimeoutRef.current) {
+      clearTimeout(menuTimeoutRef.current);
+    }
+    menuTimeoutRef.current = setTimeout(() => {
+      setMenuOpen(false);
+    }, 200);
+  };
 
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (menuTimeoutRef.current) {
+        clearTimeout(menuTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -84,7 +110,7 @@ export default function Navbar({
   });
 
   return (
-    <header className="sticky top-0 z-40 bg-[#090d16] border-b border-white/10 px-4 lg:px-6 py-2.5 transition-colors shadow-sm">
+    <header className="sticky top-0 z-[5000] bg-[#090d16] border-b border-white/10 px-4 lg:px-6 py-2.5 transition-colors shadow-sm">
       <div className="flex items-center justify-between gap-4">
         {/* Left: Brand Identity & Municipal Operations Center */}
         <div className="flex items-center gap-3 shrink-0">
@@ -204,9 +230,15 @@ export default function Navbar({
           </button>
 
           {/* Command Modules Dropdown */}
-          <div className="relative" ref={menuRef}>
+          <div
+            className="relative"
+            ref={menuRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-expanded={menuOpen}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-medium transition-colors ${
                 menuOpen
                   ? "bg-sky-500/10 border-sky-500/40 text-sky-300"
@@ -219,7 +251,11 @@ export default function Navbar({
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-1.5 w-64 rounded-lg bg-[#0d1424] border border-white/10 shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+              <div
+                className="absolute right-0 mt-1.5 w-64 rounded-lg bg-[#0d1424] border border-white/10 shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
                 <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 mb-1">
                   Operational Command Tools
                 </div>
