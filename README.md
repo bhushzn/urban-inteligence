@@ -19,7 +19,7 @@
 
 ## 📌 Executive Summary
 
-Over **4,700 fatalities** and tens of thousands of serious road injuries in India each year are caused directly by potholes, unattended road fissures, and unmonitored civic hazards. Traditional municipal inspection requires slow, expensive manual inspection patrols that struggle to cover even 15% of city streets monthly.
+Over **4,700 fatalities** and tens of thousands of serious road injuries in India each year are caused directly by potholes, unattended road fissures, and unmonitored civic hazards. Traditional municipal inspection requires slow, expensive manual patrols that struggle to cover even 15% of city streets monthly.
 
 **CityEye** solves this crisis by transforming existing **public transport fleets (city buses, waste collection trucks, and municipal patrol vans)** into real-time scanning rovers. Focused on **Vidisha Municipal Corporation**, on-vehicle dashcams combined with edge/cloud **YOLOv8 computer vision models** and accurate GPS allow hazards to be detected, classified, geocoded, and live-dispatched to an interactive Command Center in **under 50 milliseconds**.
 
@@ -42,40 +42,201 @@ Over **4,700 fatalities** and tens of thousands of serious road injuries in Indi
 
 ---
 
-## 🏗️ System Architecture
+## 📐 Technical Approach
 
-Detailed architecture specifications, component diagrams, and sequence flows are documented in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+CityEye employs a modular, fault-tolerant, edge-to-cloud architecture designed specifically for the operational challenges of Indian municipal infrastructure:
 
+### 1. Edge Sensing & Ingestion Resilience
+- **Transit Dashcam Telemetry**: Roving municipal buses and field vehicles capture video at 25–30 FPS. Rather than uploading heavy continuous video streams, edge units extract frames at regular intervals (10s auto-patrol) or upon sudden z-axis accelerometer spikes.
+- **Strict Active Stream Validation**: The pipeline enforces active camera stream readiness. If a camera is disconnected, inactive, or obstructed, the ingestion engine halts capture rather than emitting black or synthetic empty frames.
+- **Lightweight Multipart Ingestion**: Ingested frames are packaged with vehicle metadata, speed, route ID, and timestamp, sent via asynchronous HTTP POST multipart payloads under 150 KB.
+
+### 2. Computer Vision & Machine Learning Pipeline
+- **YOLOv8 Multi-Class Detector**: Utilizing an optimized YOLOv8 neural network trained on Indian road conditions (RDD2022 dataset: longitudinal cracks, transverse cracks, alligator cracking, deep potholes, and municipal garbage overflow).
+- **Confidence Gating & Classification**:detections undergo confidence threshold filtering ($\tau \ge 0.10$). High-confidence detections automatically override client category tags, assign bounding box coordinates `[x, y, w, h]`, and dynamically assign severity (`High`, `Medium`, `Low`).
+- **Binary Magic-Byte Image Validation**: Uploaded files undergo binary header inspection (JPEG `FF D8 FF`, PNG `89 50 4E 47`, WebP `52 49 46 46`) to prevent MIME-spoofing and security vulnerabilities before reaching the model.
+
+### 3. Geolocation Engine & Spatial Intelligence
+- **Hardware EXIF Metadata Extraction**: When photos are captured on smartphones or digital cameras, the backend uses `PIL.ExifTags` to parse GPS IFD (`0x8825`), converting Degrees-Minutes-Seconds (DMS) tuples into high-precision decimal degrees ($DD = Deg + \frac{Min}{60} + \frac{Sec}{3600}$).
+- **Multi-Tier Geolocation Fallback**: If browser geolocation is blocked (e.g. non-HTTPS mobile LAN origins), the system automatically queries `/api/geo/current`, resolving client coordinates via fast, zero-key IP geolocation.
+- **Spatial Deduplication**: Incidents occurring within a 5-meter radius of an existing active hazard are automatically merged into an escalation cluster to prevent duplicate contractor work orders.
+
+### 4. Pavement Distress Index (PDI) Mathematical Model
+The overall structural health of each Vidisha arterial corridor is quantified via the Pavement Distress Index ($PDI \in [0, 100]$):
+$$PDI = 100 - \sum_{i=1}^{n} \left( W_{\text{severity}} \times D_{\text{category}} \times \frac{\text{Count}_i}{\text{Length}_{\text{km}}} \right) \times M_{\text{monsoon}}$$
+- **Baseline**: 100 represents a flawless, newly surfaced roadway.
+- **Deduction Weights**: High Severity Pothole ($W=15$), Medium Crack ($W=8$), Waterlogging Obstruction ($W=12$).
+- **Monsoon Multiplier ($M_{\text{monsoon}}$)**: Simulates soil moisture saturation and sub-base weakening during rainfall (0–100 mm/hr), forecasting 15-day and 30-day degradation trajectories.
+
+### 5. Multi-Channel Contractor SLA & Proof-of-Work Verification
+- **Automated SLA Assignment**: Critical road craters receive a strict 24-hour repair SLA; moderate hazards receive 48 hours.
+- **WhatsApp Gateway Dispatch**: Contractors receive instant mobile alerts formatted with incident ID, ward, hazard description, photograph, and a direct Google Maps GPS turn-by-turn navigation URL (`https://maps.google.com/?q=lat,lng`).
+- **Proof-of-Work AI Verification**: Upon repair completion, the contractor uploads an "After Repair" photograph. The verification engine computes surface texture variance and patch smoothness. If the score exceeds 85%, the work order is approved and the incident is resolved.
+
+---
+
+## 🏛️ System Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph SENSING["1. SENSING & CAPTURE LAYER"]
+        BusCam["🚌 Public Transit Fleet Dashcams\n(dashcam_simulator.py • 25 FPS)"]
+        MobileCam["📱 Mobile Field Camera\n(BusCameraModal.tsx • QR / LAN Stream)"]
+        CitizenPortal["🏛️ Citizen Reporting Portal\n(ReportModal.tsx • Live GPS & EXIF)"]
+    end
+
+    subgraph GATEWAY["2. INGESTION & GATEWAY LAYER (FastAPI)"]
+        StreamVal["🛡️ Active Stream Validator\n(Rejects Inactive / Black Frames)"]
+        ExifParser["📍 Hardware EXIF GPS Extractor\n(DMS to Decimal Degrees Parser)"]
+        RateLimit["⏳ SlowAPI Rate Limiter\n(120 req/min • Brute Force Protection)"]
+        MagicBytes["🔍 Magic-Byte File Validator\n(JPEG / PNG / WebP Header Inspection)"]
+        
+        BusCam --> StreamVal
+        MobileCam --> StreamVal
+        CitizenPortal --> ExifParser
+        StreamVal --> MagicBytes
+        ExifParser --> MagicBytes
+        MagicBytes --> RateLimit
+    end
+
+    subgraph AI_PIPELINE["3. COMPUTER VISION & INTELLIGENCE PIPELINE"]
+        YOLO["🧠 YOLOv8 Multi-Class Classifier\n(Indian Road Anomaly Dataset)"]
+        ConfFilter["🎯 Confidence Gate (tau >= 0.10)\nSeverity & Dynamic Category Assign"]
+        SpatialDedupe["📐 Spatial Deduplication Engine\n(5-Meter Radius Cluster Matcher)"]
+        
+        RateLimit --> YOLO
+        YOLO --> ConfFilter
+        ConfFilter --> SpatialDedupe
+    end
+
+    subgraph DATA_LAYER["4. DATA & PERSISTENCE LAYER"]
+        DualDB[("🗄️ Dual Database Engine\nPostgreSQL asyncpg / SQLite aiosqlite")]
+        Storage["☁️ Storage Manager\n(Cloudinary CDN / Local Disk Uploads)"]
+        
+        SpatialDedupe --> DualDB
+        SpatialDedupe --> Storage
+    end
+
+    subgraph BROADCAST["5. REAL-TIME EVENT BROADCAST"]
+        WSManager["📡 Full-Duplex WebSocket Broadcast Hub\n(sub-50ms Event Delivery)"]
+        DualDB --> WSManager
+    end
+
+    subgraph COMMAND_CENTER["6. MUNICIPAL COMMAND CENTER & CONSUMERS"]
+        GisMap["🗺️ Authentic Google Maps GIS\n(Streets / Satellite / Dark • Vidisha Corridors)"]
+        PdiEngine["📊 PDI Corridor Forecaster\n(Monsoon Stress Simulator • 15d/30d Wear)"]
+        SafeNav["🧭 Safe-Route Emergency Router\n(Fastest vs Safest Bypass Navigation)"]
+        ContractorDispatch["📲 WhatsApp SLA Dispatch Gateway\n(Google Maps Turn Navigation Links)"]
+        PowVerifier["🛠️ Proof-of-Work Verification\n(Before/After Smoothness Compaction AI)"]
+        
+        WSManager --> GisMap
+        DualDB --> PdiEngine
+        DualDB --> SafeNav
+        DualDB --> ContractorDispatch
+        ContractorDispatch --> PowVerifier
+    end
 ```
-                              EDGE SENSING LAYER
-                   ┌──────────────────────────────────────┐
-                   │  🚌 Vidisha Transit Bus / Dashcam    │
-                   │  (dashcam_simulator.py / Mobile Cam) │
-                   └──────────────────┬───────────────────┘
-                                      │ HTTP POST (EXIF GPS + Frames)
-                                      ▼
-                             BACKEND API LAYER (FastAPI)
-                   ┌──────────────────────────────────────┐
-                   │  ├── 🧠 YOLOv8 Anomaly Classifier    │
-                   │  ├── 📍 EXIF GPS Metadata Extractor  │
-                   │  ├── 🚑 Safe-Route Emergency Router  │
-                   │  ├── 📊 Corridor PDI Forecaster      │
-                   │  ├── 📲 WhatsApp Dispatch Gateway    │
-                   │  ├── 🛡️ SlowAPI & Magic-Byte Filter  │
-                   │  └── 🔐 JWT Bearer RBAC (Admin/Agent)│
-                   └──────────┬─────────────────┬─────────┘
-                              │                 │
-            SQL Read / Write  │                 │ WebSocket Broadcast
-                              ▼                 ▼
-         DATABASE LAYER                     COMMAND CENTER & PWA
-  ┌───────────────────────────┐       ┌───────────────────────────────┐
-  │  🗄️ PostgreSQL / SQLite   │       │ 🌐 React 19 + TypeScript + PWA│
-  │  (Auto-Indexing & Pools)  │       │ ├── 🗺️ Google Maps + Satellite │
-  │                           │       │ ├── 🚌 Fleet Dashcam HUD      │
-  │                           │       │ ├── 📸 Active Camera Snaps    │
-  │                           │       │ ├── 👷 Proof-of-Work Verifier │
-  │                           │       │ └── 📊 Corridor PDI Forecaster│
-  └───────────────────────────┘       └───────────────────────────────┘
+
+---
+
+## 🔄 Operational Flowcharts
+
+### Flowchart 1: Autonomous Incident Ingestion, AI Detection & Triage
+
+```mermaid
+flowchart TD
+    Start([📷 Frame Captured by Dashcam / Camera]) --> CheckActive{Is Camera Stream\nActive & Non-Empty?}
+    
+    CheckActive -- No --> AbortInactive[⚠️ Abort Ingestion\nDisplay 'Camera Inactive' Alert\nNever Upload Black Frames]
+    CheckActive -- Yes --> ReadExif{Does Image Contain\nHardware EXIF GPS?}
+    
+    ReadExif -- Yes --> ExtractExif[📍 Parse EXIF IFD 0x8825\nConvert DMS to Decimal Degrees\nPrecision: 5 Decimal Places]
+    ReadExif -- No --> CheckBrowserGPS{Is Browser GPS\nPermitted?}
+    
+    CheckBrowserGPS -- Yes --> UseBrowserGPS[🌐 Use navigator.geolocation\nHigh Accuracy Mode]
+    CheckBrowserGPS -- No --> UseIPGeo[🛰️ Query /api/geo/current\nFallback to Real IP Location]
+    
+    ExtractExif --> ValidateHeader
+    UseBrowserGPS --> ValidateHeader
+    UseIPGeo --> ValidateHeader
+    
+    ValidateHeader[🔍 Validate Magic Bytes\nVerify JPEG/PNG File Signature] --> RunYOLO[🧠 Run YOLOv8 Neural Inference\nDetect Potholes, Waste, Waterlogging, Fissures]
+    
+    RunYOLO --> CheckConf{Confidence >= 0.10?}
+    CheckConf -- Yes --> OverrideType[🏷️ Override Incident Type & Severity\nCompute Bounding Box x, y, w, h]
+    CheckConf -- No --> KeepDefault[Keep User-Submitted Category\nConfidence Marked Baseline]
+    
+    OverrideType --> DedupeCheck{Existing Active Hazard\nWithin 5m Radius?}
+    KeepDefault --> DedupeCheck
+    
+    DedupeCheck -- Yes --> MergeCluster[📈 Increment Severity & Cluster Count\nUpdate Incident Timestamp]
+    DedupeCheck -- No --> InsertDB[💾 Insert New Incident Row\nDatabase Ledger with Real Photo]
+    
+    MergeCluster --> BroadcastWS
+    InsertDB --> BroadcastWS
+    
+    BroadcastWS[📡 Broadcast WebSocket Event\nEvent: 'new_incident'] --> UpdateMap[🗺️ Pin Incident on Google Map\nTrigger Audio Alert & Update PDI Corridor]
+    
+    UpdateMap --> End([✅ Triage Complete < 50ms])
+```
+
+---
+
+### Flowchart 2: Contractor SLA Lifecycle & Proof-of-Work Verification
+
+```mermaid
+flowchart TD
+    A([🚨 Verified Incident on Command Center]) --> B[👨‍💼 Municipal Admin Assigns Contractor]
+    B --> C{Determine Hazard Severity}
+    
+    C -- High Severity --> D1[⏱️ Assign 24-Hour Critical SLA]
+    C -- Medium Severity --> D2[⏱️ Assign 48-Hour Moderate SLA]
+    C -- Low Severity --> D3[⏱️ Assign 72-Hour Routine SLA]
+    
+    D1 --> E[📲 Generate WhatsApp Dispatch Link\nIncludes: Incident ID, Ward, Photo,\nand Direct Google Maps GPS Navigation]
+    D2 --> E
+    D3 --> E
+    
+    E --> F[👷 Contractor Receives Notification & Mobilizes Crew]
+    F --> G[🔨 Physical Road Repair Executed on Site]
+    G --> H[📸 Contractor Snaps 'After Repair' Photo]
+    
+    H --> I[POST /api/workorders/:id/verify\nUpload After-Repair Evidence]
+    I --> J[🧠 AI Proof-of-Work Computer Vision Engine]
+    J --> K[Compute Surface Smoothness Score & Edge Disruption]
+    
+    K --> L{Smoothness Score >= 85%?}
+    
+    L -- Yes --> M1[✅ Approve Proof of Work\nMark Work Order: 'Completed'\nMark Incident: 'Resolved']
+    M1 --> N1[🌟 Reward Contractor Compliance Score\nBroadcast 'incident_resolved' on Map]
+    
+    L -- No --> M2[❌ Reject Proof of Work\nFlag Defective Compaction\nRe-open Ticket with Supervisor Alert]
+    M2 --> F
+```
+
+---
+
+### Flowchart 3: Safe-Route Hazard-Aware Emergency Routing Engine
+
+```mermaid
+flowchart TD
+    StartRoute([🚑 Emergency Vehicle / Commuter Requests Route]) --> InputEndpoints[Input: Origin GPS & Destination GPS\ne.g., AIIMS Hospital to Madhav Ganj]
+    
+    InputEndpoints --> FetchNetwork[🗺️ Retrieve Vidisha Road Graph Network\nExtract Nodes & Edges]
+    FetchNetwork --> FetchHazards[⚠️ Query Active Unresolved Incidents\nExtract Severe Potholes, Waterlogging & Encroachments]
+    
+    FetchHazards --> BuildWeightGraph[⚖️ Construct Dual-Cost Weighted Graph]
+    
+    BuildWeightGraph --> CalcFastest[🏎️ Route A: Fastest Standard Path\nOptimized strictly for Distance & Free-Flow Speed]
+    BuildWeightGraph --> CalcSafe[🛡️ Route B: Safest Hazard-Aware Path\nApplies Exponential Penalty to Hazard Edges:\nCost = Distance * (1 + Sum of Hazard Severities)]
+    
+    CalcFastest --> CompStats[📊 Compute Comparative Metrics:\n- Distance (km)\n- Travel Time (mins)\n- Hazard Encounter Count\n- Surface Smoothness Index (%)]
+    CalcSafe --> CompStats
+    
+    CompStats --> RenderGIS[🗺️ Render Both Polylines on Google Maps:\n- Red Dashed: Fastest High-Risk Route\n- Cyan Solid: Safest Hazard-Bypass Route]
+    
+    RenderGIS --> TurnByTurn[🧭 Generate Turn-by-Turn Guidance Steps\nwith Real-Time Hazard Warning Callouts]
+    TurnByTurn --> EndRoute([✅ Route Ready for Dispatch])
 ```
 
 ---
