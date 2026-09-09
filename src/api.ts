@@ -186,7 +186,42 @@ export interface Analytics {
   fleet_health: number;
   ward_breakdown: { ward: string; count: number }[];
   category_breakdown: { category: string; count: number }[];
+  recent_trend: { hour: string; count: number }[];
 }
+
+export const DEFAULT_ANALYTICS: Analytics = {
+  total: 48,
+  resolved: 29,
+  verified: 38,
+  critical: 7,
+  pending: 12,
+  resolution_rate: 60.4,
+  active_buses: 14,
+  fleet_health: 96,
+  ward_breakdown: [
+    { ward: "Ward 1", count: 8 },
+    { ward: "Ward 3", count: 12 },
+    { ward: "Ward 5", count: 6 },
+    { ward: "Ward 7", count: 11 },
+    { ward: "Ward 12", count: 7 },
+    { ward: "Ward 15", count: 4 },
+  ],
+  category_breakdown: [
+    { category: "road", count: 22 },
+    { category: "garbage", count: 11 },
+    { category: "water", count: 7 },
+    { category: "infrastructure", count: 5 },
+    { category: "encroachment", count: 3 },
+  ],
+  recent_trend: [
+    { hour: "06:00", count: 2 },
+    { hour: "08:00", count: 7 },
+    { hour: "10:00", count: 14 },
+    { hour: "12:00", count: 9 },
+    { hour: "14:00", count: 11 },
+    { hour: "16:00", count: 5 },
+  ],
+};
 
 export interface AIResult {
   type: string;

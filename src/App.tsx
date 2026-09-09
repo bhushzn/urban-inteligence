@@ -14,13 +14,13 @@ import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { SafeRouteModal } from "./components/SafeRouteModal";
 import { LiveDashcamModal } from "./components/LiveDashcamModal";
 import { CivicKarmaModal } from "./components/CivicKarmaModal";
-import { api, connectWebSocket, getStoredUser } from "./api";
+import { api, connectWebSocket, getStoredUser, DEFAULT_ANALYTICS } from "./api";
 import type { Incident, Analytics, WSEvent, User, SafeRouteResponse } from "./api";
 import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotificationPermission } from "./utils/audioAlert";
 
 export default function App() {
   const [incidents,      setIncidents]      = useState<Incident[]>([]);
-  const [analytics,      setAnalytics]      = useState<Analytics | null>(null);
+  const [analytics,      setAnalytics]      = useState<Analytics>(DEFAULT_ANALYTICS);
   const [activeIncident, setActiveIncident] = useState<Incident | null>(null);
   const [wsConnected,    setWsConnected]    = useState(false);
   const [showReport,     setShowReport]     = useState(false);
