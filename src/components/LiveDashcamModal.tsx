@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { api } from "../api";
 
 interface LiveDashcamModalProps {
   isOpen: boolean;
@@ -12,6 +13,16 @@ interface CameraDevice {
   label: string;
   isPhone?: boolean;
 }
+
+// Accurate Vidisha Transit Waypoints
+const VIDISHA_TRANSIT_WAYPOINTS = [
+  { lat: 23.5240, lng: 77.8115, ward: "Ward 4",  location: "Madhav Ganj Main Market, Vidisha" },
+  { lat: 23.5226, lng: 77.8148, ward: "Ward 12", location: "Station Road Underpass, Vidisha" },
+  { lat: 23.5190, lng: 77.8064, ward: "Ward 7",  location: "Neemtal Commercial Area, Vidisha" },
+  { lat: 23.5170, lng: 77.8171, ward: "Ward 9",  location: "Durga Nagar Arterial, Vidisha" },
+  { lat: 23.5050, lng: 77.7750, ward: "Ward 2",  location: "Sanchi Road Highway Link, Vidisha" },
+  { lat: 23.5350, lng: 77.8100, ward: "Ward 14", location: "Ahmedpur Link Road, Vidisha" },
+];
 
 // MJPEG refresh stream for /shot.jpg endpoints (IP Webcam)
 const MjpegStream: React.FC<{ url: string }> = ({ url }) => {
@@ -28,11 +39,18 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
   onClose,
   onSnapshotReport,
 }) => {
-  const [speed, setSpeed] = useState<number>(38);
+  const [speed, setSpeed] = useState<number>(34);
   const [hazardDetected, setHazardDetected] = useState<boolean>(true);
-  const [anomalyCount, setAnomalyCount] = useState<number>(14);
-  const [activeBus, setActiveBus] = useState<string>("Bus #102 (BRTS Line-A)");
+  const [anomalyCount, setAnomalyCount] = useState<number>(6);
+  const [activeBus, setActiveBus] = useState<string>("Bus #101 (Vidisha Transit)");
   const [dpdpActive, setDpdpActive] = useState<boolean>(true);
+
+  // Real-time GPS coordinates & Live Telemetry
+  const [gps, setGps] = useState<{ lat: number; lng: number; ward: string; location: string }>(VIDISHA_TRANSIT_WAYPOINTS[0]);
+  const [capturing, setCapturing] = useState<boolean>(false);
+  const [autoPatrol, setAutoPatrol] = useState<boolean>(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [timeStr, setTimeStr] = useState<string>("");
 
   // ── Camera Mode: sim | device | ip ─────────────────────────────────────────
   type CamMode = "sim" | "device" | "ip";
@@ -183,14 +201,160 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
 
   useEffect(() => { if (!isOpen) { stopStream(); setCameraMode("sim"); setIpConnected(false); } }, [isOpen, stopStream]);
 
+  // Live device GPS tracking with IP fallback
   useEffect(() => {
     if (!isOpen) return;
-    const interval = setInterval(() => {
-      setSpeed(Math.round(35 + Math.random() * 12));
-      if (Math.random() > 0.3) setHazardDetected(true);
-    }, 2000);
-    return () => clearInterval(interval);
+    let watchId: number | null = null;
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setGps((prev) => ({
+            lat: Number(pos.coords.latitude.toFixed(4)),
+            lng: Number(pos.coords.longitude.toFixed(4)),
+            ward: prev.ward,
+            location: "Live Device GPS (Transit Unit)",
+          }));
+        },
+        async () => {
+          try {
+            const res = await fetch("http://127.0.0.1:8000/api/geo/current").catch(() => fetch("http://ip-api.com/json"));
+            const data = await res.json();
+            if (data && (data.lat || data.latitude)) {
+              setGps((prev) => ({
+                ...prev,
+                lat: Number((data.lat || data.latitude).toFixed(4)),
+                lng: Number((data.lng || data.lon || data.longitude).toFixed(4)),
+                location: `${data.city || 'Transit'}, ${data.region || 'Unit'}`,
+              }));
+            }
+          } catch (e) {
+            console.warn("LiveDashcam GPS fallback error:", e);
+          }
+        },
+        { enableHighAccuracy: true, maximumAge: 3000 }
+      );
+    } else {
+      fetch("http://127.0.0.1:8000/api/geo/current")
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.lat) {
+            setGps((prev) => ({
+              ...prev,
+              lat: Number(data.lat.toFixed(4)),
+              lng: Number(data.lng.toFixed(4)),
+              location: `${data.city || 'Transit'}, ${data.region || 'Unit'}`,
+            }));
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    };
   }, [isOpen]);
+
+  // Real-time clock and telemetry ticker
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setTimeStr(now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      setSpeed(Math.round(35 + Math.random() * 12));
+      if (Math.random() > 0.4) setHazardDetected(true);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Real Camera Snapshot & Report with Exact GPS Coordinates (Requires Active Camera)
+  const captureAndReport = async () => {
+    if (capturing) return;
+
+    let activeVideo: HTMLVideoElement | null = null;
+    if (cameraMode === "device") {
+      activeVideo = videoRef.current;
+      if (!camReady || !activeVideo || activeVideo.videoWidth === 0) {
+        setToastMsg("⚠️ Camera is inactive. Please turn ON camera first!");
+        setTimeout(() => setToastMsg(null), 3500);
+        return;
+      }
+    } else if (cameraMode === "ip") {
+      activeVideo = ipVideoRef.current;
+      if (!ipConnected || !activeVideo || activeVideo.videoWidth === 0) {
+        setToastMsg("⚠️ IP Camera stream is not connected!");
+        setTimeout(() => setToastMsg(null), 3500);
+        return;
+      }
+    } else {
+      setToastMsg("⚠️ Camera is off. Switch to 📷 DEVICE tab and turn on camera to capture!");
+      setTimeout(() => setToastMsg(null), 4000);
+      return;
+    }
+
+    if (!activeVideo || activeVideo.videoWidth === 0 || activeVideo.videoHeight === 0) {
+      setToastMsg("⚠️ No active camera stream detected.");
+      setTimeout(() => setToastMsg(null), 3000);
+      return;
+    }
+
+    setCapturing(true);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = activeVideo.videoWidth;
+    canvas.height = activeVideo.videoHeight;
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      setCapturing(false);
+      return;
+    }
+
+    // Draw authentic live camera frame
+    ctx.drawImage(activeVideo, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        setCapturing(false);
+        return;
+      }
+      try {
+        const form = new FormData();
+        form.append("type", "Pothole / Road Damage");
+        form.append("severity", "High");
+        form.append("lat", gps.lat.toString());
+        form.append("lng", gps.lng.toString());
+        form.append("ward", gps.ward);
+        form.append("location", `${activeBus} — ${gps.location}`);
+        form.append("category", "road");
+        form.append("image", blob, `dashcam_${Date.now()}.jpg`);
+
+        await api.createIncident(form);
+        setAnomalyCount((c) => c + 1);
+        setToastMsg(`📸 Incident Logged to Google Map at ${gps.lat.toFixed(4)}, ${gps.lng.toFixed(4)} (${new Date().toLocaleTimeString()})!`);
+        setTimeout(() => setToastMsg(null), 4000);
+        if (onSnapshotReport) onSnapshotReport();
+      } catch (err) {
+        console.error("Failed to upload frame:", err);
+        setToastMsg("⚠️ Upload error. Backend may be busy.");
+        setTimeout(() => setToastMsg(null), 3000);
+      } finally {
+        setCapturing(false);
+      }
+    }, "image/jpeg", 0.9);
+  };
+
+  // Auto-Patrol interval (Takes photo and coordinates only when camera is actively streaming)
+  useEffect(() => {
+    if (!autoPatrol || !isOpen) return;
+    if (cameraMode === "device" && !camReady) return;
+    if (cameraMode === "ip" && !ipConnected) return;
+    if (cameraMode === "sim") return;
+
+    const timer = setInterval(() => {
+      captureAndReport();
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [autoPatrol, isOpen, cameraMode, camReady, ipConnected, gps]);
 
   if (!isOpen) return null;
   const isMjpegShot = ipUrl.includes("shot.jpg");
@@ -203,9 +367,36 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
   );
 
   const SnapBar = ({ label }: { label: string }) => (
-    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between font-mono text-xs text-white bg-black/70 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10">
-      <span className="font-bold text-emerald-400">{label}</span>
-      <button onClick={() => { setAnomalyCount(c => c + 1); onSnapshotReport ? onSnapshotReport() : alert("📸 Snapshot captured!"); }} className="px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center space-x-1.5 transition-all"><span>📸</span><span>Snapshot</span></button>
+    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between font-mono text-xs text-white bg-black/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 shadow-xl z-20">
+      <div className="flex items-center space-x-3">
+        <span className="font-bold text-emerald-400">{label}</span>
+        <span className="text-slate-400 hidden sm:inline">|</span>
+        <span className="text-cyan-300 text-[11px] hidden sm:inline">
+          📍 {gps.lat.toFixed(4)}° N, {gps.lng.toFixed(4)}° E
+        </span>
+        <span className="text-slate-400 hidden md:inline">|</span>
+        <span className="text-slate-300 text-[11px] hidden md:inline">
+          ⏱️ {timeStr || "LIVE"}
+        </span>
+      </div>
+      <div className="flex items-center space-x-2">
+        <button
+          onClick={() => setAutoPatrol(!autoPatrol)}
+          className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
+            autoPatrol ? "bg-amber-500/20 border-amber-500 text-amber-300 animate-pulse" : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+          }`}
+        >
+          {autoPatrol ? "⚡ Auto-Scan (Active)" : "Auto-Scan (10s)"}
+        </button>
+        <button
+          onClick={captureAndReport}
+          disabled={capturing}
+          className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md shadow-rose-950"
+        >
+          <span>{capturing ? "⏳" : "📸"}</span>
+          <span>{capturing ? "Logging..." : "Capture Frame & GPS"}</span>
+        </button>
+      </div>
     </div>
   );
 
@@ -268,6 +459,19 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
             <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">✕</button>
           </div>
         </div>
+
+        {/* Real-time Incident Creation Toast Notification */}
+        {toastMsg && (
+          <div className="bg-emerald-950/90 border-b border-emerald-500/40 text-emerald-300 px-6 py-2.5 text-xs font-mono font-bold flex items-center justify-between animate-fade-in shadow-inner">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span>{toastMsg}</span>
+            </div>
+            <span className="text-[10px] text-emerald-400 bg-emerald-900/60 px-2 py-0.5 rounded border border-emerald-500/30">
+              ✓ SYNCED WITH GOOGLE MAP
+            </span>
+          </div>
+        )}
 
         {/* Body */}
         <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1">

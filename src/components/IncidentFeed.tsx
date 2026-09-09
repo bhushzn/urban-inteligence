@@ -39,6 +39,9 @@ export default function IncidentFeed({
 
   const filtered = useMemo(() => {
     return incidents.filter((inc) => {
+      // Exclude dummy incidents or records without genuine images
+      if (!inc.image_url) return false;
+
       // Filter tab
       if (filter === "critical" && (inc.severity !== "High" || inc.resolved)) return false;
       if (filter === "unverified" && (inc.verified || inc.resolved)) return false;

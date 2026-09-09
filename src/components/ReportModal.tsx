@@ -25,10 +25,11 @@ const WARDS = ["Ward 2","Ward 3","Ward 4","Ward 5","Ward 6","Ward 7","Ward 8",
 export default function ReportModal({ onClose, onCreated }: Props) {
   const [category, setCategory]         = useState("road");
   const [severity, setSeverity]         = useState("Medium");
-  const [ward, setWard]                 = useState("Ward 7");
-  const [location, setLocation]         = useState("");
-  const [lat, setLat]                   = useState("23.8388");
-  const [lng, setLng]                   = useState("77.7753");
+  const [ward, setWard]                 = useState("Ward 4");
+  const [location, setLocation]         = useState("Madhav Ganj, Vidisha");
+  const [lat, setLat]                   = useState("23.5240");
+  const [lng, setLng]                   = useState("77.8115");
+  const [locDetecting, setLocDetecting] = useState(false);
   const [imageFile, setImageFile]       = useState<File | null>(null);
   const [previewUrl, setPreviewUrl]     = useState<string | null>(null);
   const [aiResult, setAiResult]         = useState<AIResult | null>(null);
@@ -37,15 +38,50 @@ export default function ReportModal({ onClose, onCreated }: Props) {
   const [step, setStep]                 = useState<"upload" | "review" | "done">("upload");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Get GPS from browser
+  // Auto-detect live GPS location from device or IP fallback
+  const detectLocation = () => {
+    setLocDetecting(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLat(pos.coords.latitude.toFixed(4));
+          setLng(pos.coords.longitude.toFixed(4));
+          setLocDetecting(false);
+        },
+        async () => {
+          try {
+            const res = await fetch("http://127.0.0.1:8000/api/geo/current").catch(() => fetch("http://ip-api.com/json"));
+            const data = await res.json();
+            if (data && (data.lat || data.latitude)) {
+              setLat((data.lat || data.latitude).toFixed(4));
+              setLng((data.lng || data.lon || data.longitude).toFixed(4));
+              if (data.city) setLocation(`${data.city}, ${data.region || data.regionName || ''}`);
+            }
+          } catch (e) {
+            console.warn("Location detection fallback error:", e);
+          } finally {
+            setLocDetecting(false);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    } else {
+      fetch("http://127.0.0.1:8000/api/geo/current")
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.lat) {
+            setLat(data.lat.toFixed(4));
+            setLng(data.lng.toFixed(4));
+            if (data.city) setLocation(`${data.city}, ${data.region || ''}`);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLocDetecting(false));
+    }
+  };
+
   useEffect(() => {
-    navigator.geolocation?.getCurrentPosition(
-      (pos) => {
-        setLat(pos.coords.latitude.toFixed(4));
-        setLng(pos.coords.longitude.toFixed(4));
-      },
-      () => {} // Fallback to default Bhopal coords
-    );
+    detectLocation();
   }, []);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -239,12 +275,26 @@ export default function ReportModal({ onClose, onCreated }: Props) {
                 type="text"
                 value={location}
                 onChange={e => setLocation(e.target.value)}
-                placeholder="e.g. Near TT Nagar Circle, Bhopal"
+                placeholder="e.g. Near Madhav Ganj / Station Road, Vidisha"
                 className="w-full bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none"
               />
             </div>
 
-            {/* GPS */}
+            {/* GPS with Live Auto-Detect */}
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-cyan-400" /> Geographic Coordinates
+              </span>
+              <button
+                type="button"
+                onClick={detectLocation}
+                disabled={locDetecting}
+                className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20 transition-all hover:bg-cyan-500/20"
+              >
+                {locDetecting ? <Loader2 className="w-3 h-3 animate-spin" /> : "📍"}
+                {locDetecting ? "Detecting GPS..." : "Detect Live GPS"}
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div>
                 <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">

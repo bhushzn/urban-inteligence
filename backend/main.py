@@ -36,8 +36,10 @@ from slowapi.errors import RateLimitExceeded
 
 # AI & CV
 from ultralytics import YOLO
-import cv2
 import numpy as np
+import io
+import requests
+from PIL import Image
 
 # Internal Modules
 import database
@@ -547,6 +549,91 @@ async def get_incident(inc_id: int):
 VALID_SEVERITIES = {"High", "Medium", "Low"}
 VALID_CATEGORIES = {"road", "garbage", "water", "infrastructure", "encroachment", "bus_lane", "animal", "other"}
 
+def extract_exif_gps(content: bytes) -> Optional[Dict[str, float]]:
+    """Extract authentic hardware GPS coordinates from uploaded photo EXIF metadata"""
+    try:
+        img = Image.open(io.BytesIO(content))
+        exif = img.getexif()
+        if not exif:
+            return None
+        gps_ifd = exif.get_ifd(0x8825)
+        if not gps_ifd:
+            return None
+        gps_lat = gps_ifd.get(2) # GPSLatitude
+        lat_ref = gps_ifd.get(1) # GPSLatitudeRef
+        gps_lng = gps_ifd.get(4) # GPSLongitude
+        lng_ref = gps_ifd.get(3) # GPSLongitudeRef
+        if gps_lat and gps_lng:
+            def to_dd(dms, ref):
+                dd = float(dms[0]) + float(dms[1]) / 60.0 + float(dms[2]) / 3600.0
+                return -dd if ref in ['S', 'W'] else dd
+            parsed_lat = round(to_dd(gps_lat, lat_ref), 5)
+            parsed_lng = round(to_dd(gps_lng, lng_ref), 5)
+            if -90.0 <= parsed_lat <= 90.0 and -180.0 <= parsed_lng <= 180.0:
+                return {"lat": parsed_lat, "lng": parsed_lng}
+    except Exception as e:
+        logger.debug(f"Could not parse EXIF GPS: {e}")
+    return None
+
+_cached_geo = None
+_cached_geo_time = 0
+
+@app.get("/api/geo/current")
+def get_current_geolocation():
+    """Detect client / device real geographic coordinates using fast IP Geolocation"""
+    global _cached_geo, _cached_geo_time
+    now = time.time()
+    if _cached_geo and (now - _cached_geo_time < 3600):
+        return _cached_geo
+
+    # 1. Try ip-api.com
+    try:
+        resp = requests.get("http://ip-api.com/json", timeout=3.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("status") == "success":
+                _cached_geo = {
+                    "lat": round(float(data["lat"]), 4),
+                    "lng": round(float(data["lon"]), 4),
+                    "city": data.get("city", "Bhopal"),
+                    "region": data.get("regionName", "Madhya Pradesh"),
+                    "country": data.get("country", "India"),
+                    "source": "ip-api"
+                }
+                _cached_geo_time = now
+                return _cached_geo
+    except Exception:
+        pass
+
+    # 2. Try ipwho.is fallback
+    try:
+        resp = requests.get("https://ipwho.is/", timeout=3.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("success") is not False and "latitude" in data:
+                _cached_geo = {
+                    "lat": round(float(data["latitude"]), 4),
+                    "lng": round(float(data["longitude"]), 4),
+                    "city": data.get("city", "Bhopal"),
+                    "region": data.get("region", "Madhya Pradesh"),
+                    "country": data.get("country", "India"),
+                    "source": "ipwhois"
+                }
+                _cached_geo_time = now
+                return _cached_geo
+    except Exception:
+        pass
+
+    # 3. Default fallback
+    return {
+        "lat": 23.2599,
+        "lng": 77.4126,
+        "city": "Bhopal",
+        "region": "Madhya Pradesh",
+        "country": "India",
+        "source": "default"
+    }
+
 @app.post("/api/incidents")
 @limiter.limit("30/minute")
 async def create_incident(
@@ -581,6 +668,15 @@ async def create_incident(
     # ── Image Upload Handling & Validation ──
     if image and image.filename:
         content = await image.read()
+        
+        # Check if the photo contains authentic hardware EXIF GPS metadata
+        exif_gps = extract_exif_gps(content)
+        if exif_gps:
+            print(f"📍 [EXIF GPS] Auto-corrected incident GPS from camera EXIF: {exif_gps['lat']}, {exif_gps['lng']}")
+            lat = exif_gps["lat"]
+            lng = exif_gps["lng"]
+            if not location or "Bhopal" in location:
+                location = f"Camera GPS Location ({lat:.4f}, {lng:.4f})"
         
         # Validate image file safety and size
         is_valid, err_msg = storage.validate_image_file(image.filename, content)

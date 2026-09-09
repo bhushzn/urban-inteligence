@@ -46,4 +46,13 @@ venv/
 # Uploads
 backend/uploads/*
 !backend/uploads/.gitkeep
+!backend/uploads/real_*.jpg
+!backend/uploads/incident_1788924070115.jpg
+!backend/uploads/incident_1788944092042.jpg
+!backend/uploads/incident_1788922990402.jpg
+!backend/uploads/incident_1788948063175.jpg
 temp_dashcam_frame.jpg
+scratch_repo/
+uploads/
+backend/blank.jpg
+backend/annotated_output.jpg

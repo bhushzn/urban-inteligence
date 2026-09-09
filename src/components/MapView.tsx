@@ -132,59 +132,57 @@ interface Props {
   onClearRoute?: () => void;
 }
 
-// Bhopal city centre
-const BHOPAL_CENTER: [number, number] = [23.8388, 77.7753];
+// Vidisha city centre (Madhav Ganj / Station Road / Neemtal)
+const VIDISHA_CENTER: [number, number] = [23.5230, 77.8120];
 
-// Dedicated Bhopal BRTS Rapid Transit Corridors
+// Dedicated Vidisha Transit Corridors
 const BRTS_CORRIDORS: [number, number][][] = [
-  // Corridor 1: Misrod ➔ Habibganj ➔ MP Nagar ➔ Roshanpura ➔ Bairagarh
+  // Corridor 1: Sanchi Highway Link ➔ Neemtal ➔ Madhav Ganj ➔ Vidisha Railway Station
   [
-    [23.8050, 77.8080],
-    [23.8180, 77.7990],
-    [23.8270, 77.7940],
-    [23.8340, 77.7850],
-    [23.8440, 77.7620],
-    [23.8550, 77.7400],
-    [23.8640, 77.7200],
+    [23.5050, 77.7750],
+    [23.5130, 77.7920],
+    [23.5190, 77.8064],
+    [23.5240, 77.8115],
+    [23.5226, 77.8148],
   ],
-  // Corridor 2: Hoshangabad Rd Link ➔ Board Office ➔ Link Rd 1
+  // Corridor 2: Ahmedpur Road ➔ Durga Nagar ➔ Betwa River Ghats
   [
-    [23.8120, 77.7850],
-    [23.8220, 77.7890],
-    [23.8270, 77.7940],
-    [23.8390, 77.8020],
-    [23.8500, 77.8100],
+    [23.5350, 77.8100],
+    [23.5280, 77.8110],
+    [23.5226, 77.8148],
+    [23.5170, 77.8171],
+    [23.5290, 77.8250],
   ],
 ];
 
 const BRTS_CHECKPOINTS = [
   {
     id: "brts-1",
-    name: "Roshanpura Hub",
-    coords: [23.8340, 77.7850] as [number, number],
+    name: "Madhav Ganj Hub",
+    coords: [23.5240, 77.8115] as [number, number],
     status: "clear" as const,
-    compliance: "96% Clear",
-    desc: "Active AI Camera Unit DL-108 scanning lane",
+    compliance: "98% Clear",
+    desc: "Active AI Camera Unit VD-101 scanning lane",
   },
   {
     id: "brts-2",
-    name: "MP Nagar Chokepoint",
-    coords: [23.8270, 77.7940] as [number, number],
+    name: "Neemtal Chokepoint",
+    coords: [23.5190, 77.8064] as [number, number],
     status: "warning" as const,
     compliance: "Encroachment Alert",
-    desc: "Private vehicle obstruction detected in transit corridor",
+    desc: "Vegetable market obstruction detected in transit corridor",
   },
   {
     id: "brts-3",
-    name: "Habibganj Station Lane",
-    coords: [23.8180, 77.7990] as [number, number],
+    name: "Station Road Lane",
+    coords: [23.5226, 77.8148] as [number, number],
     status: "clear" as const,
-    compliance: "98% Clear",
-    desc: "Smooth transit speed: 38 km/h average",
+    compliance: "96% Clear",
+    desc: "Smooth transit speed: 34 km/h average",
   },
 ];
 
-// Simulated Transit Bus Fleet with live routes
+// Simulated Transit Bus Fleet with accurate Vidisha live routes
 interface BusVehicle {
   id: string;
   number: string;
@@ -197,10 +195,10 @@ interface BusVehicle {
 }
 
 const INITIAL_BUSES: BusVehicle[] = [
-  { id: "b1", number: "102", route: "Kolar Rd ➔ New Market", lat: 23.8310, lng: 77.7850, speed: 36, deltaLat: 0.0006, deltaLng: 0.0004 },
-  { id: "b2", number: "204", route: "Ayodhya Bypass ➔ MP Nagar", lat: 23.8430, lng: 77.7680, speed: 41, deltaLat: -0.0005, deltaLng: 0.0007 },
-  { id: "b3", number: "315", route: "Arera Colony ➔ TT Nagar", lat: 23.8490, lng: 77.7880, speed: 31, deltaLat: 0.0004, deltaLng: -0.0005 },
-  { id: "b4", number: "412", route: "Habibganj ➔ Shivaji Nagar", lat: 23.8180, lng: 77.7760, speed: 38, deltaLat: -0.0004, deltaLng: -0.0006 },
+  { id: "b1", number: "101", route: "Sanchi Rd ➔ Madhav Ganj", lat: 23.5150, lng: 77.7950, speed: 32, deltaLat: 0.0004, deltaLng: 0.0005 },
+  { id: "b2", number: "202", route: "Station Rd ➔ Neemtal", lat: 23.5226, lng: 77.8148, speed: 28, deltaLat: -0.0004, deltaLng: -0.0003 },
+  { id: "b3", number: "303", route: "Ahmedpur Rd ➔ Collectorate", lat: 23.5310, lng: 77.8080, speed: 35, deltaLat: -0.0005, deltaLng: 0.0002 },
+  { id: "b4", number: "404", route: "Durga Nagar ➔ Betwa Ghats", lat: 23.5170, lng: 77.8171, speed: 30, deltaLat: 0.0003, deltaLng: 0.0004 },
 ];
 
 export default function MapView({
@@ -213,6 +211,7 @@ export default function MapView({
   onClearRoute,
 }: Props) {
   const mapRef = useRef<L.Map | null>(null);
+  const [mapStyle, setMapStyle] = useState<"google-streets" | "google-hybrid" | "dark">("google-streets");
   const [buses, setBuses] = useState<BusVehicle[]>(INITIAL_BUSES);
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
 
@@ -226,11 +225,11 @@ export default function MapView({
         let deltaLat = bus.deltaLat;
         let deltaLng = bus.deltaLng;
 
-        // Bounce back if moved too far from Bhopal center
-        if (Math.abs(newLat - BHOPAL_CENTER[0]) > 0.035) deltaLat = -deltaLat;
-        if (Math.abs(newLng - BHOPAL_CENTER[1]) > 0.035) deltaLng = -deltaLng;
+        // Bounce back if moved too far from Vidisha center
+        if (Math.abs(newLat - VIDISHA_CENTER[0]) > 0.025) deltaLat = -deltaLat;
+        if (Math.abs(newLng - VIDISHA_CENTER[1]) > 0.025) deltaLng = -deltaLng;
 
-        const jitterSpeed = Math.max(22, Math.min(52, bus.speed + Math.floor(Math.random() * 5 - 2)));
+        const jitterSpeed = Math.max(20, Math.min(48, bus.speed + Math.floor(Math.random() * 5 - 2)));
         return {
           ...bus,
           lat: newLat,
@@ -247,6 +246,8 @@ export default function MapView({
 
   const visibleIncidents = incidents.filter((inc) => {
     if (!mapLayers.potholes && inc.category === "road") return false;
+    // Don't show incidents without real images
+    if (!inc.image_url) return false;
     return true;
   });
 
@@ -257,17 +258,18 @@ export default function MapView({
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-cyan-400 blink" />
           <span className="text-sm font-semibold text-slate-200 font-display">GIS Command Map</span>
-          <span className="text-xs text-slate-500 ml-1">— Bhopal, Madhya Pradesh • LIVE</span>
+          <span className="text-xs text-slate-400 ml-1 font-medium">— Vidisha, Madhya Pradesh • LIVE</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Quick Ward Focus */}
+          {/* Quick Vidisha Landmarks Focus */}
           <div className="hidden sm:flex items-center gap-1 bg-slate-800/40 border border-slate-700/40 px-2 py-1 rounded-lg text-[11px]">
             <span className="text-slate-500 font-semibold mr-1">Focus:</span>
             {[
-              { name: "Ward 7", coords: [23.8300, 77.7900] as [number, number] },
-              { name: "Ward 12", coords: [23.8412, 77.7654] as [number, number] },
-              { name: "Arera", coords: [23.8522, 77.7820] as [number, number] },
-              { name: "MP Nagar", coords: [23.8270, 77.7600] as [number, number] },
+              { name: "Madhav Ganj", coords: [23.5240, 77.8115] as [number, number] },
+              { name: "Station Rd", coords: [23.5226, 77.8148] as [number, number] },
+              { name: "Neemtal", coords: [23.5190, 77.8064] as [number, number] },
+              { name: "Durga Nagar", coords: [23.5170, 77.8171] as [number, number] },
+              { name: "Sanchi Rd", coords: [23.5050, 77.7750] as [number, number] },
             ].map(w => (
               <button
                 key={w.name}
@@ -277,6 +279,40 @@ export default function MapView({
                 {w.name}
               </button>
             ))}
+          </div>
+
+          {/* Map Layer Switcher: Google Map vs Satellite vs Dark */}
+          <div className="flex items-center gap-1 bg-slate-800/70 p-0.5 rounded-lg border border-slate-700/60 text-[11px]">
+            <button
+              onClick={() => setMapStyle("google-streets")}
+              title="Actual Google Maps Streets view"
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold transition-all ${
+                mapStyle === "google-streets" ? "bg-cyan-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span>🗺️</span>
+              <span>Google Map</span>
+            </button>
+            <button
+              onClick={() => setMapStyle("google-hybrid")}
+              title="Google Maps Satellite Hybrid view"
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold transition-all ${
+                mapStyle === "google-hybrid" ? "bg-cyan-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span>🛰️</span>
+              <span>Satellite</span>
+            </button>
+            <button
+              onClick={() => setMapStyle("dark")}
+              title="Tactical Dark GIS Canvas"
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold transition-all ${
+                mapStyle === "dark" ? "bg-cyan-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span>🌙</span>
+              <span>Dark</span>
+            </button>
           </div>
 
           {/* Legend */}
@@ -296,21 +332,28 @@ export default function MapView({
       {/* Map Canvas */}
       <div className="relative flex-1" style={{ minHeight: "400px" }}>
         <MapContainer
-          center={BHOPAL_CENTER}
-          zoom={13}
-          style={{ height: "100%", width: "100%", background: "#0a0f1e" }}
+          center={VIDISHA_CENTER}
+          zoom={14}
+          style={{ height: "100%", width: "100%", background: mapStyle.startsWith("google") ? "#e5e3df" : "#0a0f1e" }}
           ref={mapRef as React.RefObject<L.Map>}
           zoomControl={true}
         >
-          {/* Clean Watermark-Free High-Definition Dark Canvas Tiles */}
+          {/* Active Google Map / Satellite / Dark Tile Layer */}
           <TileLayer
+            key={mapStyle}
             url={
-              (import.meta.env.VITE_MAP_TILE_URL as string) ||
-              (import.meta.env.VITE_CARTO_API_KEY
-                ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${import.meta.env.VITE_CARTO_API_KEY}`
-                : "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}")
+              mapStyle === "google-streets"
+                ? "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                : mapStyle === "google-hybrid"
+                ? "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+                : (import.meta.env.VITE_MAP_TILE_URL as string) ||
+                  (import.meta.env.VITE_CARTO_API_KEY
+                    ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${import.meta.env.VITE_CARTO_API_KEY}`
+                    : "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}")
             }
-            attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; OpenStreetMap'
+            subdomains={mapStyle.startsWith("google") ? ["mt0", "mt1", "mt2", "mt3"] : ["a", "b", "c"]}
+            maxZoom={20}
+            attribution={mapStyle.startsWith("google") ? '&copy; Google Maps' : '&copy; Esri &copy; OpenStreetMap'}
           />
 
           {/* Programmatic Navigation */}
