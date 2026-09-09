@@ -131,14 +131,39 @@ export default function Navbar({
                 <span>OPERATIONAL</span>
               </div>
             </div>
-            <p className="text-slate-400 text-[10px] font-medium mt-0.5 tracking-wide hidden sm:block">
+            <p className="text-slate-400 text-[10px] font-medium mt-0.5 tracking-wide hidden 2xl:block">
               Vidisha Smart City Command & Control Center (VCCC)
+            </p>
+            <p className="text-slate-400 text-[10px] font-medium mt-0.5 tracking-wide hidden sm:block 2xl:hidden">
+              Vidisha Municipal Command Center
             </p>
           </div>
         </div>
 
-        {/* Center: Real-Time Operational Telemetry Cards */}
-        <div className="hidden xl:flex items-center gap-2">
+        {/* Center: Real-Time Operational Telemetry - Compact Pill on Laptops, Full Cards on 2XL Screens */}
+        {/* Laptops (1280px - 1535px): Sleek Unified Telemetry Pill */}
+        <div className="hidden xl:flex 2xl:hidden items-center gap-3 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/5 font-mono text-[11px]">
+          <div className="flex items-center gap-1.5 text-sky-400">
+            <Bus className="w-3.5 h-3.5" />
+            <span className="font-bold text-white">{analytics ? analytics.active_buses : 4}</span>
+            <span className="text-slate-400 text-[10px]">Fleet</span>
+          </div>
+          <span className="text-white/15">•</span>
+          <div className="flex items-center gap-1.5 text-amber-400">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span className="font-bold text-amber-300">{analytics ? analytics.total - analytics.resolved : 7}</span>
+            <span className="text-slate-400 text-[10px]">Open</span>
+          </div>
+          <span className="text-white/15">•</span>
+          <div className="flex items-center gap-1.5 text-emerald-400">
+            <Activity className="w-3.5 h-3.5" />
+            <span className="font-bold text-emerald-300">{analytics ? `${analytics.fleet_health}%` : "96.4%"}</span>
+            <span className="text-slate-400 text-[10px]">PDI</span>
+          </div>
+        </div>
+
+        {/* Large Displays (1536px+): Full Telemetry Cards */}
+        <div className="hidden 2xl:flex items-center gap-2">
           {/* Active Fleet */}
           <div className="flex items-center gap-2.5 px-3 py-1.5 rounded bg-white/[0.03] border border-white/5">
             <Bus className="w-4 h-4 text-sky-400 shrink-0" />
@@ -206,7 +231,7 @@ export default function Navbar({
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-300 hover:text-white text-xs font-medium transition-colors"
           >
             <Video className="w-3.5 h-3.5 text-rose-400" />
-            <span className="hidden lg:inline">Dashcam</span>
+            <span className="hidden xl:inline">Dashcam</span>
           </button>
 
           {/* High Frequency Operational Launcher: Safe Route Navigation */}
@@ -216,7 +241,7 @@ export default function Navbar({
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-300 hover:text-white text-xs font-medium transition-colors"
           >
             <Navigation className="w-3.5 h-3.5 text-sky-400" />
-            <span className="hidden lg:inline">Safe Route</span>
+            <span className="hidden xl:inline">Safe Route</span>
           </button>
 
           {/* Citizen Portal */}

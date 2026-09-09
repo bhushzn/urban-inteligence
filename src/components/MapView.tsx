@@ -270,7 +270,7 @@ export default function MapView({
   });
 
   return (
-    <div className="cmd-surface rounded-lg overflow-hidden flex flex-col h-full min-h-[540px] border border-white/10 shadow-sm relative">
+    <div className="cmd-surface rounded-lg overflow-hidden flex flex-col h-full min-h-[400px] lg:min-h-[480px] border border-white/10 shadow-sm relative">
       {/* Top GIS Operations Toolbar */}
       <div className="bg-[#0b101c] border-b border-white/10 px-3.5 py-2 flex flex-wrap items-center justify-between gap-2.5 z-10">
         <div className="flex items-center gap-2">
@@ -278,25 +278,30 @@ export default function MapView({
           <span className="font-semibold text-xs text-white uppercase tracking-wider">
             GIS Command Map
           </span>
-          <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
+          <span className="text-[11px] text-slate-400 font-mono hidden 2xl:inline">
             • Vidisha, MP [23.5230° N, 77.8120° E]
+          </span>
+          <span className="text-[11px] text-slate-400 font-mono hidden sm:inline 2xl:hidden">
+            • Vidisha, MP
           </span>
         </div>
 
-        {/* Quick Vidisha Landmarks Focus */}
+        {/* Quick Vidisha Landmarks Focus - Top 3 on Compact Laptops, All 5 on Large Screens */}
         <div className="hidden md:flex items-center gap-1 bg-white/[0.03] border border-white/5 px-2 py-0.5 rounded text-[11px]">
           <span className="text-slate-500 font-semibold mr-1 uppercase text-[10px]">Jump To:</span>
           {[
-            { name: "Madhav Ganj", coords: [23.5240, 77.8115] as [number, number] },
-            { name: "Station Rd", coords: [23.5226, 77.8148] as [number, number] },
-            { name: "Neemtal", coords: [23.5190, 77.8064] as [number, number] },
-            { name: "Durga Nagar", coords: [23.5170, 77.8171] as [number, number] },
-            { name: "Sanchi Rd", coords: [23.5050, 77.7750] as [number, number] },
+            { name: "Madhav Ganj", coords: [23.5240, 77.8115] as [number, number], priority: true },
+            { name: "Station Rd", coords: [23.5226, 77.8148] as [number, number], priority: true },
+            { name: "Neemtal", coords: [23.5190, 77.8064] as [number, number], priority: true },
+            { name: "Durga Nagar", coords: [23.5170, 77.8171] as [number, number], priority: false },
+            { name: "Sanchi Rd", coords: [23.5050, 77.7750] as [number, number], priority: false },
           ].map(w => (
             <button
               key={w.name}
               onClick={() => setFlyTarget(w.coords)}
-              className="px-1.5 py-0.5 rounded text-slate-400 hover:text-sky-300 hover:bg-white/5 transition-colors font-medium"
+              className={`px-1.5 py-0.5 rounded text-slate-400 hover:text-sky-300 hover:bg-white/5 transition-colors font-medium ${
+                w.priority ? "inline-block" : "hidden xl:inline-block"
+              }`}
             >
               {w.name}
             </button>
@@ -336,7 +341,7 @@ export default function MapView({
       </div>
 
       {/* Map Canvas */}
-      <div className="relative flex-1 w-full h-full min-h-[460px]">
+      <div className="relative flex-1 w-full h-full min-h-[360px] lg:min-h-[420px]">
         <MapContainer
           center={VIDISHA_CENTER}
           zoom={14}
@@ -613,10 +618,12 @@ export default function MapView({
           </div>
         )}
 
-        {/* Bottom-Right Coordinates HUD */}
-        <div className="absolute bottom-3 right-3 z-[1000] bg-[#090e1c]/90 backdrop-blur-sm border border-white/10 rounded px-2.5 py-1 text-[10px] font-mono text-slate-400 shadow-md flex items-center gap-2">
-          <Crosshair className="w-3 h-3 text-sky-400" />
-          <span>VIDISHA GRID • 23.5230° N, 77.8120° E • WGS84</span>
+        {/* Bottom-Right Coordinates HUD - Responsive */}
+        <div className="hidden sm:flex absolute bottom-3 right-3 z-[1000] bg-[#090e1c]/90 backdrop-blur-sm border border-white/10 rounded px-2.5 py-1 text-[10px] font-mono text-slate-400 shadow-md items-center gap-1.5">
+          <Crosshair className="w-3 h-3 text-sky-400 shrink-0" />
+          <span className="hidden xl:inline">VIDISHA GRID • </span>
+          <span>23.5230° N, 77.8120° E</span>
+          <span className="hidden 2xl:inline"> • WGS84</span>
         </div>
       </div>
     </div>

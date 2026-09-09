@@ -65,7 +65,7 @@ export default function AnalyticsPanel({ analytics }: Props) {
       </div>
 
       {/* Resolution & SLA Rate */}
-      <div className="cmd-surface rounded-lg p-3.5 border border-white/10">
+      <div className="cmd-surface rounded-lg p-3 sm:p-3.5 border border-white/10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -78,18 +78,18 @@ export default function AnalyticsPanel({ analytics }: Props) {
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 py-2 text-center">
-          <div className="p-2 rounded bg-white/[0.02] border border-white/5">
-            <span className="text-[10px] text-slate-400 block mb-0.5">Resolved</span>
-            <span className="font-mono text-base font-bold text-emerald-400">{analytics.resolved}</span>
+        <div className="grid grid-cols-3 gap-1.5 py-2 text-center">
+          <div className="p-1.5 rounded bg-white/[0.02] border border-white/5">
+            <span className="text-[9px] uppercase font-semibold text-slate-400 block mb-0.5 truncate">Resolved</span>
+            <span className="font-mono text-sm sm:text-base font-bold text-emerald-400">{analytics.resolved}</span>
           </div>
-          <div className="p-2 rounded bg-white/[0.02] border border-white/5">
-            <span className="text-[10px] text-slate-400 block mb-0.5">Pending</span>
-            <span className="font-mono text-base font-bold text-amber-400">{analytics.pending}</span>
+          <div className="p-1.5 rounded bg-white/[0.02] border border-white/5">
+            <span className="text-[9px] uppercase font-semibold text-slate-400 block mb-0.5 truncate">Pending</span>
+            <span className="font-mono text-sm sm:text-base font-bold text-amber-400">{analytics.pending}</span>
           </div>
-          <div className="p-2 rounded bg-white/[0.02] border border-white/5">
-            <span className="text-[10px] text-slate-400 block mb-0.5">Critical</span>
-            <span className="font-mono text-base font-bold text-red-400">{analytics.critical}</span>
+          <div className="p-1.5 rounded bg-white/[0.02] border border-white/5">
+            <span className="text-[9px] uppercase font-semibold text-slate-400 block mb-0.5 truncate">Critical</span>
+            <span className="font-mono text-sm sm:text-base font-bold text-red-400">{analytics.critical}</span>
           </div>
         </div>
 
@@ -117,7 +117,7 @@ export default function AnalyticsPanel({ analytics }: Props) {
       </div>
 
       {/* Hazard Category Distribution */}
-      <div className="cmd-surface rounded-lg p-3.5 border border-white/10">
+      <div className="cmd-surface rounded-lg p-3 sm:p-3.5 border border-white/10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <PieChart className="w-4 h-4 text-purple-400" />
@@ -136,7 +136,7 @@ export default function AnalyticsPanel({ analytics }: Props) {
 
             return (
               <div key={c.category} className="flex items-center gap-2 text-xs">
-                <span className="text-slate-300 w-24 truncate text-[11px] font-medium">{label}</span>
+                <span className="text-slate-300 w-20 sm:w-24 truncate text-[11px] font-medium">{label}</span>
                 <div className="flex-1 h-2 rounded bg-white/[0.05] overflow-hidden">
                   <div
                     className="h-full rounded"

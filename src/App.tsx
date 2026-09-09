@@ -214,11 +214,11 @@ export default function App() {
           </button>
         </div>
 
-        {/* Two-Column Operational Split Layout */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-[580px]">
-          {/* Left / Center: Large GIS Map (68%) + Analytics Panel */}
-          <div className={`flex flex-col gap-3 lg:w-[68%] shrink-0 ${mobileTab === "feed" ? "hidden lg:flex" : "flex"}`}>
-            <div className="flex-1 min-h-[480px]">
+        {/* Two-Column Operational Split Layout - Responsive for All Laptop Widths */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-[460px] lg:min-h-[500px]">
+          {/* Left / Center: Large GIS Map + Analytics Panel */}
+          <div className={`flex-1 min-w-0 flex flex-col gap-3 ${mobileTab === "feed" ? "hidden lg:flex" : "flex"}`}>
+            <div className="flex-1 min-h-[380px] lg:min-h-[440px]">
               <MapView
                 incidents={incidents}
                 activeIncident={activeIncident}
@@ -233,9 +233,9 @@ export default function App() {
             <AnalyticsPanel analytics={analytics} />
           </div>
 
-          {/* Right: Live Incident Feed (32%) */}
-          <div className={`flex flex-col lg:w-[32%] shrink-0 ${mobileTab === "map" ? "hidden lg:flex" : "flex"}`}>
-            <div className="sticky top-16 flex flex-col h-[calc(100vh-6.2rem)] min-h-[540px]">
+          {/* Right: Live Incident Feed (Responsive Width for 1024px, 1280px, 1366px, 1440px, 1600px+ Laptops) */}
+          <div className={`w-full lg:w-[340px] xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col ${mobileTab === "map" ? "hidden lg:flex" : "flex"}`}>
+            <div className="sticky top-16 flex flex-col h-auto lg:h-[calc(100vh-6.5rem)] min-h-[460px] lg:min-h-[500px]">
               <IncidentFeed
                 incidents={incidents}
                 activeId={activeIncident?.id ?? null}

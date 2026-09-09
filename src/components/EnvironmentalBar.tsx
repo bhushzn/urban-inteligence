@@ -86,19 +86,19 @@ export const EnvironmentalBar: React.FC<EnvironmentalBarProps> = ({ telemetry: p
           </div>
 
           {/* Commuter Load / Crowd Density */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.03] border border-white/5 text-slate-300 font-mono text-[11px]">
+          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.03] border border-white/5 text-slate-300 font-mono text-[11px]">
             <Users className="w-3.5 h-3.5 text-sky-400 shrink-0" />
             <span>Load: {telemetry.crowd_density.avg_bus_load_pct}%</span>
           </div>
 
           {/* Traffic Congestion Speed */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.03] border border-white/5 text-slate-300 font-mono text-[11px]">
+          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.03] border border-white/5 text-slate-300 font-mono text-[11px]">
             <Car className="w-3.5 h-3.5 text-sky-400 shrink-0" />
             <span>Transit: {telemetry.traffic_congestion.avg_speed_kmh} km/h</span>
           </div>
 
           {/* Bus Lane Compliance */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.03] border border-white/5 text-slate-300 font-mono text-[11px]">
+          <div className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.03] border border-white/5 text-slate-300 font-mono text-[11px]">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>BRTS: {telemetry.bus_lane_enforcement.compliance_pct}%</span>
           </div>
