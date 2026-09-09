@@ -14,7 +14,7 @@ const DUMMY_ROADS = [
   { url: "/dummy_roads/road_encroachment_3.jpg", type: "Road Encroachment & Debris Hazard", severity: "Medium", category: "encroachment" },
   { url: "/dummy_roads/road_subsidence_4.jpg", type: "Structural Pavement Subsidence", severity: "High", category: "road" },
   { url: "/dummy_roads/road_fracture_5.jpg", type: "Deep Road Surface Fracture", severity: "High", category: "road" },
-  { url: "/dummy_roads/road_crack_6.jpg", type: "Transverse Asphalt Fracture", severity: "Medium", category: "road" },
+  { url: "/dummy_roads/road_fracture_5.jpg", type: "Transverse Asphalt Fracture", severity: "Medium", category: "road" },
 ];
 
 export default function BusCameraModal({ isOpen, onClose, onIncidentCreated }: Props) {

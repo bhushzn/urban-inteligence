@@ -141,7 +141,7 @@ SEED_INCIDENTS = [
     ("Encroachment & Road Obstruction", "Low",    23.5170, 77.8171, "Ward 9",  "Durga Nagar Arterial, Vidisha",     True,  "encroachment", "road_encroachment_3.jpg"),
     ("Deep Road Surface Fracture",      "High",   23.5350, 77.8100, "Ward 14", "Ahmedpur Link Road, Vidisha",       True,  "road", "road_fracture_5.jpg"),
     ("Municipal Solid Waste Overflow",  "High",   23.5200, 77.8000, "Ward 5",  "Bus Stand Area, Vidisha",           True,  "garbage", "real_garbage_bittan.jpg"),
-    ("Dangerous Transverse Crack",      "Medium", 23.5250, 77.8120, "Ward 3",  "Khandera Road, Vidisha",            True,  "road", "road_crack_6.jpg"),
+    ("Dangerous Transverse Crack",      "Medium", 23.5250, 77.8120, "Ward 3",  "Khandera Road, Vidisha",            True,  "road", "road_fracture_5.jpg"),
     ("Large Pothole Network",           "High",   23.5300, 77.8200, "Ward 8",  "Mukherjee Nagar Bypass, Vidisha",   True,  "road", "road_pothole_1.jpg"),
     ("Street Waterlogging (Monsoon)",   "Medium", 23.5150, 77.8050, "Ward 10", "Gyaraspur Link Road, Vidisha",      True,  "water", "road_waterlogging_2.jpg"),
 ]
