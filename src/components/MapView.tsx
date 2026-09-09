@@ -223,10 +223,15 @@ export default function MapView({
           ref={mapRef as React.RefObject<L.Map>}
           zoomControl={true}
         >
-          {/* Dark Carto Tiles */}
+          {/* Clean Watermark-Free High-Definition Dark Canvas Tiles */}
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+            url={
+              (import.meta.env.VITE_MAP_TILE_URL as string) ||
+              (import.meta.env.VITE_CARTO_API_KEY
+                ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${import.meta.env.VITE_CARTO_API_KEY}`
+                : "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}")
+            }
+            attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; OpenStreetMap'
           />
 
           {/* Programmatic Navigation */}
