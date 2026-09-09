@@ -148,9 +148,10 @@ SEED_INCIDENTS = [
 ]
 
 TIMESTAMPS = [
-    "2 mins ago", "5 mins ago", "11 mins ago", "18 mins ago",
-    "32 mins ago", "41 mins ago", "1 hr ago", "1.5 hrs ago",
-    "2 hrs ago", "3 hrs ago"
+    "2 mins ago", "3 mins ago", "5 mins ago", "8 mins ago",
+    "11 mins ago", "14 mins ago", "18 mins ago", "25 mins ago",
+    "32 mins ago", "41 mins ago", "50 mins ago", "1 hr ago",
+    "1.5 hrs ago", "2 hrs ago", "3 hrs ago"
 ]
 
 async def init_db(password_hasher=None):
@@ -308,7 +309,7 @@ async def init_db(password_hasher=None):
                 round(random.uniform(15, 30), 1),
                 round(random.uniform(40, 65), 1),
                 round(random.uniform(35, 55), 1),
-                TIMESTAMPS[i]
+                TIMESTAMPS[i % len(TIMESTAMPS)]
             ))
         print("[Database] Incidents seeded successfully.")
 
