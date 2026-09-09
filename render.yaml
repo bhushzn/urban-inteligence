@@ -1,4 +1,4 @@
-# CityEye AI — Render.com Blueprint Specification
+# CityEye — Render.com Blueprint Specification
 services:
   # Backend FastAPI Service
   - type: web

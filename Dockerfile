@@ -1,4 +1,4 @@
-# CityEye AI — Production Frontend Dockerfile
+# CityEye — Production Frontend Dockerfile
 FROM node:20-alpine AS builder
 
 WORKDIR /app

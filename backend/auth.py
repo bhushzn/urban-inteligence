@@ -1,5 +1,5 @@
 """
-CityEye AI — Authentication Module
+CityEye — Authentication Module
 JWT-based auth with role-based access control (RBAC)
 Compatible with both PostgreSQL and SQLite
 """

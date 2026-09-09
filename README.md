@@ -1,4 +1,4 @@
-# 🏙️ CityEye AI — Smart City Command Center
+# 🏙️ CityEye — Smart City Command Center
 
 > **Autonomous Road Hazard & Municipal Anomaly Detection Platform**  
 > *Built for Smart India Hackathon (SIH) • Problem Statement 26124*
@@ -20,7 +20,7 @@
 
 Over **4,700 fatalities** and tens of thousands of serious road injuries in India each year are caused directly by potholes, unattended road fissures, and unmonitored civic hazards. Traditional municipal inspection requires slow, expensive manual inspection patrols that struggle to cover even 15% of city streets monthly.
 
-**CityEye AI** solves this crisis by transforming existing **public transport fleets (city buses, waste collection trucks, and municipal patrol vans)** into real-time scanning rovers. Equipped with on-vehicle dashcams, lightweight edge/cloud **YOLOv8 computer vision models**, and high-precision GPS, incidents are detected, classified, geocoded, and live-dispatched to an interactive Command Center in **under 50 milliseconds**.
+**CityEye** solves this crisis by transforming existing **public transport fleets (city buses, waste collection trucks, and municipal patrol vans)** into real-time scanning rovers. Equipped with on-vehicle dashcams, lightweight edge/cloud **YOLOv8 computer vision models**, and high-precision GPS, incidents are detected, classified, geocoded, and live-dispatched to an interactive Command Center in **under 50 milliseconds**.
 
 ---
 

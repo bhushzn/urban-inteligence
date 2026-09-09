@@ -1,5 +1,5 @@
 """
-CityEye AI — Database Abstraction Layer
+CityEye — Database Abstraction Layer
 Supports:
 1. PostgreSQL (via asyncpg) for cloud deployment (Render, Supabase, Neon, Railway)
 2. SQLite (via aiosqlite) for local development and offline resilience

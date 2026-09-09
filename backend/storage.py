@@ -1,5 +1,5 @@
 """
-CityEye AI — Image & Asset Storage Manager
+CityEye — Image & Asset Storage Manager
 Supports:
 1. Cloudinary upload for production cloud storage (Vercel / Render / Supabase)
 2. Local disk fallback for development / offline use

@@ -1,7 +1,7 @@
 """
-CityEye AI — FastAPI Backend (Production-Hardened)
+CityEye — FastAPI Backend (Production-Hardened)
 Real-time Smart City Command Center API
-SIH Problem Statement 26124
+Problem Statement 26124
 """
 import asyncio
 import json
@@ -1004,7 +1004,7 @@ async def get_audit_summary():
     return {
         "report_id": "BMC-AUDIT-2026-Q3",
         "municipality": "Bhopal Municipal Corporation & Smart City Dev Corp Ltd",
-        "system": "CityEye AI Autonomous Telemetry Platform",
+        "system": "CityEye Autonomous Telemetry Platform",
         "generated_at": datetime.now().strftime("%d %B %Y, %I:%M %p"),
         "reporting_cycle": "Q3 2026 Live Audit",
         "total_lane_km_monitored": 382.5,
