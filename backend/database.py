@@ -19,12 +19,17 @@ except ImportError:
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
-# Default SQLite path (prioritize cityeye.db, fallback to urbanintel.db if present)
-_default_sqlite = os.path.join(BASE_DIR, "cityeye.db")
-if not os.path.exists(_default_sqlite) and os.path.exists(os.path.join(BASE_DIR, "urbanintel.db")):
-    _default_sqlite = os.path.join(BASE_DIR, "urbanintel.db")
-
-DB_PATH = os.getenv("SQLITE_DB_PATH", _default_sqlite)
+# Always resolve SQLite path to an absolute path within backend directory
+sqlite_env = os.getenv("SQLITE_DB_PATH", "").strip()
+if sqlite_env:
+    DB_PATH = sqlite_env if os.path.isabs(sqlite_env) else os.path.join(BASE_DIR, sqlite_env)
+else:
+    urbanintel_path = os.path.join(BASE_DIR, "urbanintel.db")
+    cityeye_path = os.path.join(BASE_DIR, "cityeye.db")
+    if os.path.exists(urbanintel_path) and os.path.getsize(urbanintel_path) > 0:
+        DB_PATH = urbanintel_path
+    else:
+        DB_PATH = cityeye_path
 
 # Detect backend engine
 IS_POSTGRES = (
@@ -130,11 +135,15 @@ async def fetch_all(query: str, params: tuple = ()) -> List[Tuple]:
 # ─── Seed Data (Authentic Vidisha Municipal Telemetry with Real Photos) ──────────────
 SEED_INCIDENTS = [
     ("Severe Road Crater / Pothole",    "High",   23.5240, 77.8115, "Ward 4",  "Madhav Ganj Main Market, Vidisha",  True,  "road", "real_pothole_mpnagar.jpg"),
-    ("Commercial Solid Waste Overflow", "Medium", 23.5190, 77.8064, "Ward 7",  "Neemtal Commercial Area, Vidisha",   True,  "garbage", "real_garbage_bittan.jpg"),
+    ("Neemtal Lake Surface Waste & Weed Inflow", "Medium", 23.5190, 77.8064, "Ward 7",  "Neemtal Lake Reservoir & Promenade, Vidisha", True, "water", "real_waterlogging_newmarket.jpg"),
     ("Transit Lane Severe Waterlogging","High",   23.5226, 77.8148, "Ward 12", "Station Road Underpass, Vidisha",    True,  "water", "real_waterlogging_newmarket.jpg"),
-    ("Structural Pavement Subsidence",   "Medium", 23.5050, 77.7750, "Ward 2",  "Sanchi Road Highway Link, Vidisha", True,  "road", "incident_1788924070115.jpg"),
-    ("Encroachment & Road Obstruction", "Low",    23.5170, 77.8171, "Ward 9",  "Durga Nagar Arterial, Vidisha",     True,  "encroachment", "incident_1788944092042.jpg"),
-    ("Deep Road Surface Fracture",      "High",   23.5350, 77.8100, "Ward 14", "Ahmedpur Link Road, Vidisha",       True,  "road", "incident_1788922990402.jpg"),
+    ("Structural Pavement Subsidence",   "Medium", 23.5050, 77.7750, "Ward 2",  "Sanchi Road Highway Link, Vidisha", True,  "road", "road_subsidence_4.jpg"),
+    ("Encroachment & Road Obstruction", "Low",    23.5170, 77.8171, "Ward 9",  "Durga Nagar Arterial, Vidisha",     True,  "encroachment", "road_encroachment_3.jpg"),
+    ("Deep Road Surface Fracture",      "High",   23.5350, 77.8100, "Ward 14", "Ahmedpur Link Road, Vidisha",       True,  "road", "road_fracture_5.jpg"),
+    ("Municipal Solid Waste Overflow",  "High",   23.5200, 77.8000, "Ward 5",  "Bus Stand Area, Vidisha",           True,  "garbage", "real_garbage_bittan.jpg"),
+    ("Dangerous Transverse Crack",      "Medium", 23.5250, 77.8120, "Ward 3",  "Khandera Road, Vidisha",            True,  "road", "road_crack_6.jpg"),
+    ("Large Pothole Network",           "High",   23.5300, 77.8200, "Ward 8",  "Mukherjee Nagar Bypass, Vidisha",   True,  "road", "road_pothole_1.jpg"),
+    ("Street Waterlogging (Monsoon)",   "Medium", 23.5150, 77.8050, "Ward 10", "Gyaraspur Link Road, Vidisha",      True,  "water", "road_waterlogging_2.jpg"),
 ]
 
 TIMESTAMPS = [

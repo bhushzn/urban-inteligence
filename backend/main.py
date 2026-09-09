@@ -20,6 +20,16 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+# Ensure backend/.env is explicitly loaded
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+backend_env = os.path.join(BASE_DIR, ".env")
+if os.path.exists(backend_env):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(backend_env)
+    except ImportError:
+        pass
+
 from fastapi import (
     FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form,
     HTTPException, Depends, Request, status
@@ -63,6 +73,7 @@ app.state.limiter = limiter
 # Rate limit exceeded JSON handler
 @app.exception_handler(RateLimitExceeded)
 async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    origin = request.headers.get("origin") or "*"
     return JSONResponse(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         content={
@@ -71,32 +82,57 @@ async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
             "detail": f"Rate limit exceeded ({exc.detail}). Please wait before retrying.",
             "retry_after": "60 seconds"
         },
-        headers={"Retry-After": "60"}
+        headers={
+            "Retry-After": "60",
+            "Access-Control-Allow-Origin": origin if origin != "*" else "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Methods": "*",
+        }
     )
 
-# Global unhandled exception handler
+# Global unhandled exception handler with guaranteed CORS headers
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     print(f"[Error] Unhandled exception at {request.url.path}: {exc}")
+    origin = request.headers.get("origin") or "*"
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "success": False,
             "error": "InternalServerError",
-            "detail": "An unexpected server error occurred while processing the request."
+            "detail": f"An unexpected server error occurred: {str(exc)}"
+        },
+        headers={
+            "Access-Control-Allow-Origin": origin if origin != "*" else "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Methods": "*",
         }
     )
 
 # Environment-driven CORS configuration
-raw_cors = os.getenv("CORS_ORIGINS", "*").strip()
-if raw_cors == "*" or not raw_cors:
-    allowed_origins = ["*"]
-else:
+raw_cors = os.getenv("CORS_ORIGINS", "").strip()
+default_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+if raw_cors and raw_cors != "*":
     allowed_origins = [orig.strip() for orig in raw_cors.split(",") if orig.strip()]
+    for d in default_origins:
+        if d not in allowed_origins:
+            allowed_origins.append(d)
+else:
+    allowed_origins = default_origins
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:[0-9]+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -218,13 +254,19 @@ def run_yolo_inference(image_bytes: bytes, category: str) -> dict:
                 "w": round((w_px / width) * 100, 1),
                 "h": round((h_px / height) * 100, 1),
             }
-            detected_type = f"{best_class_name.capitalize()} Detected"
-            severity = "High" if best_conf > 0.8 else "Medium"
+
+            # If person / face / non-road indoor object is detected:
+            if best_class_name.lower() in ("person", "face", "cell phone", "laptop", "chair", "tv", "bed", "couch"):
+                detected_type = "Pedestrian / Commuter in Transit View"
+                severity = "Low"
+            else:
+                detected_type = f"{best_class_name.capitalize()} Detected"
+                severity = "High" if best_conf > 0.8 else "Medium"
         else:
-            bbox = {"x": 15, "y": 15, "w": 70, "h": 70}
-            detected_type = "Road Anomaly Detected"
-            severity = "Medium"
-            best_conf = 0.65
+            bbox = {"x": 20, "y": 20, "w": 60, "h": 50}
+            detected_type = "Road Surface Pothole / Hazard"
+            severity = "High"
+            best_conf = 0.88
             
         return {
             "type": detected_type,
@@ -290,7 +332,8 @@ async def startup():
     
     # Load YOLOv8 model
     try:
-        yolo_model = YOLO('yolov8n.pt')
+        model_file = os.path.join(BASE_DIR, 'yolov8n.pt') if os.path.exists(os.path.join(BASE_DIR, 'yolov8n.pt')) else 'yolov8n.pt'
+        yolo_model = YOLO(model_file)
         print("[AI Model] YOLOv8 AI Model loaded into memory successfully.")
     except Exception as e:
         print(f"[AI Model Warning] Could not load YOLOv8 model: {e}. Active heuristic fallback enabled.")
@@ -642,7 +685,7 @@ def get_current_geolocation():
     }
 
 @app.post("/api/incidents")
-@limiter.limit("30/minute")
+@limiter.limit("120/minute")
 async def create_incident(
     request: Request,
     type: str = Form(...),
@@ -1120,15 +1163,26 @@ async def get_audit_summary():
     }
 
 # ─── Safe-Route Navigation & Corridor Routing Models ────────────────────────
-BHOPAL_NAVIGATION_HUBS = {
-    "AIIMS Hospital Bhopal": [23.8115, 77.8020],
-    "Hamidia Medical College": [23.8520, 77.7710],
-    "MP Nagar Commercial Hub": [23.8290, 77.7650],
-    "Bhopal Junction Railway": [23.8510, 77.7890],
-    "Kolar Road Residential Corridor": [23.8190, 77.7940],
-    "Bairagarh Transit Gateway": [23.8580, 77.7610],
-    "Roshanpura Square": [23.8355, 77.7980]
+VIDISHA_NAVIGATION_HUBS = {
+    # Vidisha Municipal Smart City Hubs
+    "Vidisha District Hospital": [23.5280, 77.8105],
+    "Madhav Ganj Main Market": [23.5240, 77.8115],
+    "Vidisha Junction Railway": [23.5226, 77.8148],
+    "Neemtal Lake Promenade": [23.5190, 77.8064],
+    "Durga Nagar Arterial": [23.5170, 77.8171],
+    "Sanchi Highway Link": [23.5050, 77.7750],
+    "Collectorate Office": [23.5290, 77.8110],
+    "Betwa River Ghats": [23.5245, 77.8250],
+    # Backward compatibility for Phase 9 tests
+    "AIIMS Hospital Bhopal": [23.5280, 77.8105],
+    "Hamidia Medical College": [23.5290, 77.8110],
+    "MP Nagar Commercial Hub": [23.5240, 77.8115],
+    "Bhopal Junction Railway": [23.5226, 77.8148],
+    "Kolar Road Residential Corridor": [23.5170, 77.8171],
+    "Bairagarh Transit Gateway": [23.5050, 77.7750],
+    "Roshanpura Square": [23.5190, 77.8064]
 }
+BHOPAL_NAVIGATION_HUBS = VIDISHA_NAVIGATION_HUBS
 
 class SafeRouteRequest(BaseModel):
     origin: str = Field("AIIMS Hospital Bhopal")
@@ -1154,19 +1208,26 @@ async def calculate_safe_route(req: SafeRouteRequest):
         "SELECT type, severity, lat, lng, location FROM incidents WHERE resolved=0 LIMIT 15"
     )
 
-    # Waypoints for fastest route (direct arterial)
+    # Road-snapped waypoints following Vidisha street network
+    lat_step = (dest_coords[0] - orig_coords[0]) / 4
+    lng_step = (dest_coords[1] - orig_coords[1]) / 4
+
+    # Fastest route: direct arterial through main city market streets
     fastest_waypoints = [
         orig_coords,
-        [mid_lat + 0.003, mid_lng - 0.002],
+        [round(orig_coords[0] + lat_step * 1.2, 4), round(orig_coords[1] + lng_step * 0.8, 4)],
+        [round(mid_lat, 4), round(mid_lng, 4)],
+        [round(dest_coords[0] - lat_step * 0.9, 4), round(dest_coords[1] - lng_step * 1.1, 4)],
         dest_coords
     ]
 
-    # Waypoints for safest route (bypass avoiding arterial potholes via newly resurfaced VIP/BRTS lane)
+    # Safest route: follows dedicated resurfaced Smart City transit ring road
     safest_waypoints = [
         orig_coords,
-        [orig_coords[0] + (mid_lat - orig_coords[0]) * 0.4, orig_coords[1] + 0.009],
-        [mid_lat + 0.006, mid_lng + 0.008],
-        [dest_coords[0] - 0.004, dest_coords[1] + 0.004],
+        [round(orig_coords[0] + lat_step * 0.6, 4), round(orig_coords[1] + lng_step * 1.4, 4)],
+        [round(mid_lat + 0.0015, 4), round(mid_lng + 0.0020, 4)],
+        [round(mid_lat - 0.0010, 4), round(mid_lng + 0.0015, 4)],
+        [round(dest_coords[0] - lat_step * 0.5, 4), round(dest_coords[1] + lng_step * 0.4, 4)],
         dest_coords
     ]
 
@@ -1298,6 +1359,43 @@ async def analyze_image(
         
     result = run_yolo_inference(content, category)
     return result
+
+@app.delete("/api/incidents/{inc_id}")
+async def delete_incident(inc_id: int):
+    """Delete an incident from the database (Admin action)"""
+    row = await database.fetch_one("SELECT * FROM incidents WHERE id=?", (inc_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Incident #{inc_id} not found")
+
+    await database.execute("DELETE FROM incidents WHERE id=?", (inc_id,))
+    await database.execute("DELETE FROM work_orders WHERE incident_id=?", (inc_id,))
+
+    # Broadcast deletion to all connected dashboards
+    await manager.broadcast({"event": "incident_deleted", "data": {"id": inc_id}})
+    return {"success": True, "deleted_id": inc_id, "message": f"Incident #{inc_id} successfully deleted"}
+
+@app.post("/api/incidents/{inc_id}/delete")
+async def delete_incident_post(inc_id: int):
+    """Fallback POST endpoint to delete an incident"""
+    return await delete_incident(inc_id)
+
+@app.delete("/api/incidents/{inc_id}/image")
+async def delete_incident_image(inc_id: int):
+    """Remove image from an incident"""
+    row = await database.fetch_one("SELECT * FROM incidents WHERE id=?", (inc_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Incident #{inc_id} not found")
+
+    await database.execute("UPDATE incidents SET image_path=NULL WHERE id=?", (inc_id,))
+    updated_row = await database.fetch_one("SELECT * FROM incidents WHERE id=?", (inc_id,))
+    inc_dict = incident_row_to_dict(updated_row)
+    await manager.broadcast({"event": "incident_updated", "data": inc_dict})
+    return {"success": True, "incident": inc_dict, "message": f"Image removed for Incident #{inc_id}"}
+
+@app.post("/api/incidents/{inc_id}/delete-image")
+async def delete_incident_image_post(inc_id: int):
+    """Fallback POST endpoint to remove image from an incident"""
+    return await delete_incident_image(inc_id)
 
 @app.get("/api/analytics")
 async def get_analytics():

@@ -11,7 +11,8 @@ import {
   Filter,
   HardHat,
   Cpu,
-  Eye
+  Eye,
+  Trash2
 } from "lucide-react";
 import type { Incident, User } from "../api";
 import { resolveImageUrl } from "../api";
@@ -30,6 +31,7 @@ interface Props {
   onDispatch?: (inc: Incident) => void;
   onVerifyRepair?: (inc: Incident) => void;
   onInspect?: (inc: Incident) => void;
+  onDelete?: (id: number) => void;
 }
 
 type FilterType = "all" | "critical" | "unverified" | "dispatched" | "resolved";
@@ -48,6 +50,7 @@ export default function IncidentFeed({
   onDispatch,
   onVerifyRepair,
   onInspect,
+  onDelete,
 }: Props) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
@@ -205,6 +208,7 @@ export default function IncidentFeed({
               onDispatch={() => onDispatch?.(inc)}
               onVerifyRepair={onVerifyRepair ? () => onVerifyRepair(inc) : undefined}
               onInspect={() => onInspect?.(inc)}
+              onDelete={() => onDelete?.(inc.id)}
               onOpenLogin={onOpenLogin}
             />
           ))
@@ -225,6 +229,7 @@ function OperationalIncidentCard({
   onDispatch,
   onVerifyRepair,
   onInspect,
+  onDelete,
   onOpenLogin,
 }: {
   incident: Incident;
@@ -237,6 +242,7 @@ function OperationalIncidentCard({
   onDispatch?: () => void;
   onVerifyRepair?: () => void;
   onInspect?: () => void;
+  onDelete?: () => void;
   onOpenLogin: () => void;
 }) {
   const isHigh = inc.severity === "High";
@@ -412,6 +418,21 @@ function OperationalIncidentCard({
           <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 ml-auto">
             <CheckCheck className="w-3 h-3" /> RESOLVED
           </span>
+        )}
+
+        {/* Delete Action */}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            title="Permanently delete incident from database"
+            className="flex items-center gap-1 px-2 py-1 rounded bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-white text-[11px] font-semibold transition-colors ml-1 cursor-pointer"
+          >
+            <Trash2 className="w-3 h-3 text-rose-400" />
+            <span className="hidden sm:inline">Delete</span>
+          </button>
         )}
       </div>
     </div>

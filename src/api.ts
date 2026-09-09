@@ -561,6 +561,51 @@ export const api = {
     });
     return handleApiResponse(res, "Failed to resolve incident");
   },
+  async deleteIncident(id: number): Promise<{ success: boolean; deleted_id: number }> {
+    try {
+      const res = await fetch(`${BASE_URL}/api/incidents/${id}`, {
+        method: "DELETE",
+        headers: { ...authHeaders() },
+      });
+      if (res.status === 405 || !res.ok) {
+        const fallback = await fetch(`${BASE_URL}/api/incidents/${id}/delete`, {
+          method: "POST",
+          headers: { ...authHeaders() },
+        });
+        return handleApiResponse(fallback, "Failed to delete incident");
+      }
+      return handleApiResponse(res, "Failed to delete incident");
+    } catch {
+      const fallback = await fetch(`${BASE_URL}/api/incidents/${id}/delete`, {
+        method: "POST",
+        headers: { ...authHeaders() },
+      });
+      return handleApiResponse(fallback, "Failed to delete incident");
+    }
+  },
+
+  async deleteIncidentImage(id: number): Promise<{ success: boolean; incident: Incident; message: string }> {
+    try {
+      const res = await fetch(`${BASE_URL}/api/incidents/${id}/image`, {
+        method: "DELETE",
+        headers: { ...authHeaders() },
+      });
+      if (res.status === 405 || !res.ok) {
+        const fallback = await fetch(`${BASE_URL}/api/incidents/${id}/delete-image`, {
+          method: "POST",
+          headers: { ...authHeaders() },
+        });
+        return handleApiResponse(fallback, "Failed to delete incident image");
+      }
+      return handleApiResponse(res, "Failed to delete incident image");
+    } catch {
+      const fallback = await fetch(`${BASE_URL}/api/incidents/${id}/delete-image`, {
+        method: "POST",
+        headers: { ...authHeaders() },
+      });
+      return handleApiResponse(fallback, "Failed to delete incident image");
+    }
+  },
 
   async dispatchIncident(id: number, data: {
     contractor_name: string;
@@ -700,6 +745,7 @@ export type WSEvent =
   | { event: "new_incident";        data: Incident }
   | { event: "incident_updated";    data: Incident }
   | { event: "incident_resolved";   data: Incident }
+  | { event: "incident_deleted";    data: { id: number } }
   | { event: "work_order_verified"; data: WorkOrder };
 
 export function connectWebSocket(

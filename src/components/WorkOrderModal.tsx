@@ -65,9 +65,9 @@ export const WorkOrderModal: React.FC<Props> = ({ incident, isOpen, onClose, onD
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative glass glow-cyan rounded-2xl w-full max-w-lg overflow-hidden border border-cyan-500/30 p-6 fade-in-up">
+      <div className="relative glass glow-cyan rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-cyan-500/30 fade-in-up">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-700/60">
+        <div className="flex items-center justify-between p-5 border-b border-slate-700/60 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
               <Send className="w-4 h-4" />
@@ -85,18 +85,20 @@ export const WorkOrderModal: React.FC<Props> = ({ incident, isOpen, onClose, onD
           </button>
         </div>
 
-        {done ? (
-          <div className="py-10 text-center space-y-3">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center mx-auto text-emerald-400">
-              <CheckCircle2 className="w-8 h-8 animate-bounce" />
+        {/* Scrollable Body */}
+        <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
+          {done ? (
+            <div className="py-10 text-center space-y-3">
+              <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center mx-auto text-emerald-400">
+                <CheckCircle2 className="w-8 h-8 animate-bounce" />
+              </div>
+              <h4 className="text-base font-bold text-white">Work Order Dispatched!</h4>
+              <p className="text-xs text-slate-400">
+                Contractor notified with SLA deadline. Incident timeline updated.
+              </p>
             </div>
-            <h4 className="text-base font-bold text-white">Work Order Dispatched!</h4>
-            <p className="text-xs text-slate-400">
-              Contractor notified with SLA deadline. Incident timeline updated.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleDispatch} className="space-y-4 text-xs">
+          ) : (
+            <form onSubmit={handleDispatch} className="space-y-4 text-xs flex flex-col h-full">
             {/* Incident Summary Card */}
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
               <div>
@@ -190,7 +192,7 @@ export const WorkOrderModal: React.FC<Props> = ({ incident, isOpen, onClose, onD
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-4 mt-auto border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => {
@@ -205,33 +207,34 @@ export const WorkOrderModal: React.FC<Props> = ({ incident, isOpen, onClose, onD
                   );
                   window.open(`https://wa.me/?text=${msg}`, "_blank");
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 text-xs font-semibold transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 text-xs font-semibold transition-all"
                 title="Send directly to contractor on WhatsApp"
               >
                 <span>📲</span>
-                <span>Dispatch via WhatsApp</span>
+                <span>WhatsApp</span>
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex w-full sm:w-auto items-center gap-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors"
+                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>{submitting ? "Dispatching..." : "Confirm Dispatch Order"}</span>
+                  <span>{submitting ? "Wait..." : "Confirm"}</span>
                 </button>
               </div>
             </div>
           </form>
-        )}
+          )}
+        </div>
       </div>
     </div>,
     document.getElementById("modal-root") || document.body

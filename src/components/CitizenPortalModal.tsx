@@ -120,12 +120,12 @@ export const CitizenPortalModal: React.FC<Props> = ({ isOpen, onClose, onReportS
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white font-display">Citizen Grievance Portal</h3>
+                <h3 className="text-base font-bold text-white font-display">Citizen Portal</h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
                   Public Access
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Directly alert Bhopal Municipal Corporation Command Center</p>
+              <p className="text-xs text-slate-400">Report an incident to the Municipal Command Center.</p>
             </div>
           </div>
           <button

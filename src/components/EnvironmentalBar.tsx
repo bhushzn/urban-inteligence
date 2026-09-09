@@ -8,7 +8,9 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronUp,
-  Sliders
+  Sliders,
+  Activity,
+  EyeOff
 } from "lucide-react";
 import type { EnvironmentalTelemetry } from "../api";
 import { DEFAULT_TELEMETRY, api } from "../api";
@@ -19,7 +21,9 @@ interface EnvironmentalBarProps {
 
 export const EnvironmentalBar: React.FC<EnvironmentalBarProps> = ({ telemetry: propTelemetry }) => {
   const [telemetry, setTelemetry] = useState<EnvironmentalTelemetry>(propTelemetry || DEFAULT_TELEMETRY);
-  const [expanded, setExpanded] = useState<boolean>(false);
+  // Default to false so website is clean and user friendly
+  const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [expandedDiagnostics, setExpandedDiagnostics] = useState<boolean>(false);
 
   useEffect(() => {
     if (propTelemetry) {
@@ -48,8 +52,36 @@ export const EnvironmentalBar: React.FC<EnvironmentalBarProps> = ({ telemetry: p
       ? "badge-warning"
       : "badge-critical";
 
+  // Clean, user-friendly collapsed state
+  if (!showDetails) {
+    return (
+      <div className="bg-[#0b101c]/80 backdrop-blur-md border-b border-white/5 px-4 lg:px-6 py-1.5 transition-all">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
+            <span className="font-medium text-slate-300">Live City Telemetry & Diagnostics</span>
+            <span className="text-[11px] text-slate-500 hidden sm:inline">
+              • Real-time AQI, weather, transit load & sensor feeds
+            </span>
+          </div>
+
+          <button
+            onClick={() => setShowDetails(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 hover:text-sky-300 border border-sky-500/20 text-xs font-semibold transition-all shadow-sm cursor-pointer"
+            title="Click to view full real-time telemetry grid and diagnostics"
+          >
+            <Activity className="w-3.5 h-3.5 text-sky-400" />
+            <span>Show More Details</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded detailed telemetry view
   return (
-    <div className="bg-[#0b101c] border-b border-white/5 px-4 lg:px-6 py-2 transition-colors">
+    <div className="bg-[#0b101c] border-b border-white/5 px-4 lg:px-6 py-2.5 transition-all animate-in fade-in duration-200">
       <div className="flex items-center justify-between gap-3 text-xs overflow-x-auto no-scrollbar">
         {/* Left Indicator: Roving Multi-Sensor Network */}
         <div className="flex items-center gap-2.5 shrink-0">
@@ -104,19 +136,34 @@ export const EnvironmentalBar: React.FC<EnvironmentalBarProps> = ({ telemetry: p
           </div>
         </div>
 
-        {/* Right Details Toggle */}
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 text-[11px] text-slate-400 hover:text-sky-300 font-medium transition-colors shrink-0"
-        >
-          <Sliders className="w-3 h-3 text-sky-400" />
-          <span>{expanded ? "Close Diagnostics" : "Sensor Diagnostics"}</span>
-          {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-        </button>
+        {/* Right Controls: Sensor Diagnostics & Hide Details */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => setExpandedDiagnostics(!expandedDiagnostics)}
+            className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 text-[11px] text-slate-400 hover:text-sky-300 font-medium transition-colors"
+            title="Toggle deeper multi-sensor diagnostic readings"
+          >
+            <Sliders className="w-3 h-3 text-sky-400" />
+            <span>{expandedDiagnostics ? "Close Diagnostics" : "Sensor Diagnostics"}</span>
+            {expandedDiagnostics ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          <button
+            onClick={() => {
+              setShowDetails(false);
+              setExpandedDiagnostics(false);
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-slate-400 hover:text-white transition-colors border border-white/5 cursor-pointer ml-1"
+            title="Collapse telemetry to user-friendly compact view"
+          >
+            <EyeOff className="w-3 h-3 text-slate-400" />
+            <span>Hide Details</span>
+          </button>
+        </div>
       </div>
 
       {/* Expanded Multi-Sensor Calibration Drawer */}
-      {expanded && (
+      {expandedDiagnostics && (
         <div className="mt-2.5 pt-3 pb-1 border-t border-white/5 animate-in fade-in duration-150">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {/* AQI Breakdown */}

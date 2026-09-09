@@ -10,13 +10,14 @@ interface SafeRouteModalProps {
 }
 
 const HUBS = [
-  "AIIMS Hospital Bhopal",
-  "Hamidia Medical College",
-  "MP Nagar Commercial Hub",
-  "Bhopal Junction Railway",
-  "Kolar Road Residential Corridor",
-  "Bairagarh Transit Gateway",
-  "Roshanpura Square"
+  "Vidisha District Hospital",
+  "Madhav Ganj Main Market",
+  "Vidisha Junction Railway",
+  "Neemtal Lake Promenade",
+  "Durga Nagar Arterial",
+  "Sanchi Highway Link",
+  "Collectorate Office",
+  "Betwa River Ghats"
 ];
 
 export const SafeRouteModal: React.FC<SafeRouteModalProps> = ({
@@ -24,8 +25,8 @@ export const SafeRouteModal: React.FC<SafeRouteModalProps> = ({
   onClose,
   onApplyRouteToMap,
 }) => {
-  const [origin, setOrigin] = useState<string>("AIIMS Hospital Bhopal");
-  const [destination, setDestination] = useState<string>("MP Nagar Commercial Hub");
+  const [origin, setOrigin] = useState<string>("Vidisha District Hospital");
+  const [destination, setDestination] = useState<string>("Madhav Ganj Main Market");
   const [vehicleType, setVehicleType] = useState<string>("ambulance");
   const [loading, setLoading] = useState<boolean>(false);
   const [routeResult, setRouteResult] = useState<SafeRouteResponse | null>(null);
@@ -70,14 +71,14 @@ export const SafeRouteModal: React.FC<SafeRouteModalProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <h2 id="modal-safe-route-title" className="text-lg font-bold text-white tracking-wide">
-                  Safe-Route Hazard-Aware Navigation Engine
+                  Safe Route Navigation
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  Ambulance & Commuter AI Routing
+                  AI Routing
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Calculates real-time anomaly-avoiding bypass paths to prevent vehicle damage & jarring patient transit.
+                Find the safest and fastest paths avoiding road anomalies.
               </p>
             </div>
           </div>

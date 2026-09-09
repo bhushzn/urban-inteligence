@@ -90,6 +90,9 @@ export default function App() {
 
           // Refresh analytics
           api.getAnalytics().then(setAnalytics).catch(() => {});
+        } else if (event.event === "incident_deleted") {
+          setIncidents(prev => prev.filter(i => i.id !== (event.data as any).id));
+          api.getAnalytics().then(setAnalytics).catch(() => {});
         } else if (event.event === "incident_updated" || event.event === "incident_resolved") {
           setIncidents(prev => prev.map(i => i.id === event.data.id ? event.data : i));
           api.getAnalytics().then(setAnalytics).catch(() => {});
@@ -129,6 +132,38 @@ export default function App() {
       alert(err.message || "Failed to resolve");
     }
   }, []);
+
+  const handleDelete = useCallback(async (id: number) => {
+    if (!window.confirm(`Are you sure you want to permanently delete Incident #${id}?`)) return;
+    try {
+      await api.deleteIncident(id);
+      setIncidents(prev => prev.filter(i => i.id !== id));
+      if (activeIncident?.id === id) setActiveIncident(null);
+      if (inspectIncidentTarget?.id === id) setInspectIncidentTarget(null);
+      api.getAnalytics().then(setAnalytics).catch(() => {});
+      setNotification(`Incident #${id} successfully deleted`);
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      alert(err.message || "Failed to delete incident");
+    }
+  }, [activeIncident, inspectIncidentTarget]);
+
+  const handleDeleteImage = useCallback(async (id: number) => {
+    if (!window.confirm(`Are you sure you want to remove the image for Incident #${id}?`)) return;
+    try {
+      await api.deleteIncidentImage(id);
+      setIncidents(prev =>
+        prev.map(inc => (inc.id === id ? { ...inc, image_url: null } : inc))
+      );
+      if (inspectIncidentTarget?.id === id) {
+        setInspectIncidentTarget(prev => (prev ? { ...prev, image_url: null } : null));
+      }
+      setNotification(`Photo evidence removed for Incident #${id}`);
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      alert(err.message || "Failed to remove incident image");
+    }
+  }, [inspectIncidentTarget]);
 
   const handleExport = useCallback(() => {
     const rows = ["ID,Type,Severity,Ward,Location,Lat,Lng,Verified,Resolved,Timestamp"];
@@ -249,6 +284,7 @@ export default function App() {
                 onDispatch={(inc) => setDispatchIncidentTarget(inc)}
                 onVerifyRepair={(inc) => setVerifyIncidentTarget(inc)}
                 onInspect={(inc) => setInspectIncidentTarget(inc)}
+                onDelete={handleDelete}
                 onOpenLogin={() => setShowLogin(true)}
               />
             </div>
@@ -269,6 +305,8 @@ export default function App() {
         onVerify={handleVerify}
         onResolve={handleResolve}
         onDispatch={(inc) => setDispatchIncidentTarget(inc)}
+        onDelete={handleDelete}
+        onDeleteImage={handleDeleteImage}
         user={user}
       />
 

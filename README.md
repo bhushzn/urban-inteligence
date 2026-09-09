@@ -25,20 +25,32 @@ Over **4,700 fatalities** and tens of thousands of serious road injuries in Indi
 
 ---
 
-## 🌟 Comprehensive Platform Capabilities
+## ✅ Working Features
+
+The following features are fully implemented and functional in the current system:
 
 | Category | Capabilities & Innovations |
 |---|---|
-| 🗺️ **Google Maps GIS Command** | Authentic Google Maps integration (`[ 🗺️ Google Map \| 🛰️ Satellite \| 🌙 Dark ]`) with **zero API key required**. Full Vidisha transit corridors (Madhav Ganj, Neemtal, Station Rd, Durga Nagar, Sanchi Highway). |
-| 📍 **Hardware EXIF & Live GPS** | Automatic extraction of exact satellite GPS coordinates from camera EXIF metadata (`Pillow`), paired with browser high-accuracy geolocation and zero-key IP geolocation fallback (`/api/geo/current`). |
-| 🧠 **Edge AI & Vision** | YOLOv8 multi-class anomaly detector (potholes, garbage dumps, waterlogging, streetlights, road fissures); live confidence scoring; binary magic-byte image validation. |
-| 🚌 **Fleet Dashcam & Mobile Cam** | Real-time transit camera stream with on-screen HUD (live speedometer, GPS coordinates, timestamp ticker, and instant spacebar snapshot). Strict stream guards prevent empty or black frame uploads. |
+| 🗺️ **Google Maps GIS Command** | Authentic Google Maps integration (`[ 🗺️ Google Map | 🛰️ Satellite | 🌙 Dark ]`) with **zero API key required**. Full Vidisha transit corridors. |
+| 📍 **Hardware EXIF & Live GPS** | Automatic extraction of exact satellite GPS coordinates from camera EXIF metadata, paired with browser high-accuracy geolocation. |
+| 🧠 **Edge AI & Vision** | YOLOv12-small multi-class anomaly detector (potholes, cracks, repaired areas); live confidence scoring. |
+| 🚌 **Fleet Dashcam & Mobile Cam** | Real-time transit camera stream simulator with on-screen HUD (live speedometer, GPS coordinates, timestamp ticker). |
 | 🚫 **Zero Dummy Data Guarantee** | 100% genuine photographic evidence for all logged incidents. No placeholder images or dark dummy records. |
-| 🚑 **Safe-Route Hazard Router** | Emergency bypass engine (`SafeRouteModal.tsx`, `POST /api/routing/safe-route`) computing Fastest vs Safest paths around active road hazards with live GIS polyline projection. |
-| 📊 **Pavement Health (PDI)** | Corridor Pavement Distress Index (0–100) across Vidisha municipal arteries with interactive Monsoon Stress Simulator (0–100mm rain) and 15d/30d deterioration forecasting. |
-| 👷 **Contractor Lifecycle** | Automated SLA dispatch, Proof-of-Work Before/After verification with interactive split-slider & AI smoothness score, and WhatsApp dispatch gateway with GPS navigation deep-links. |
-| 🏛️ **Civic Audit & Governance** | Executive Vidisha Municipal Audit Report with print PDF stylesheet and CSV export. Citizen reporting portal with Civic Karma & Leaderboard gamification. |
-| ⚡ **Performance & Resilience** | Offline-first Progressive Web App (PWA) with Service Worker caching; dual-engine DB (PostgreSQL / SQLite fallback); SlowAPI rate limiting; sub-50ms WebSockets. |
+| 🚑 **Safe-Route Hazard Router** | Emergency bypass engine computing Fastest vs Safest paths around active road hazards with live GIS polyline projection. |
+| 📊 **Pavement Health (PDI)** | Corridor Pavement Distress Index (0–100) across Vidisha municipal arteries. |
+| ⚡ **PWA & Responsiveness** | Offline-first Progressive Web App (PWA) with mobile-friendly layouts, service worker caching, and optimized UI rendering. |
+
+---
+
+## 🔮 Future Features & Implementation Roadmap
+
+| Feature | How It Can Be Implemented |
+|---|---|
+| 🧠 **Custom Fine-Tuned AI Models** | Currently using `rezzzq/yolo12s-road-damage-rdd2022`. In the future, we can fine-tune YOLOv12 on local Bhopal/Vidisha datasets using Roboflow and Ultralytics training pipelines to detect specific local anomalies (e.g., specific manhole covers, garbage dumps). |
+| 📱 **Native Mobile App (React Native)** | Port the current React PWA into a native Android/iOS app using React Native, utilizing native camera APIs for lower latency stream processing. |
+| 🌩️ **Cloud Edge Processing (AWS Greengrass)** | Deploy inference models directly to IoT edge devices mounted on buses using AWS IoT Greengrass, uploading only lightweight JSON coordinates instead of full images to save bandwidth. |
+| 📈 **Predictive Analytics (Time Series)** | Implement an LSTM (Long Short-Term Memory) or Prophet forecasting model on the backend using Python to predict future road degradation based on historical monsoon and traffic data. |
+| 💸 **Automated Tender Generation** | Generate PDF tender documents automatically when a ward's PDI drops below a threshold, using Python `ReportLab` and the existing `aiosqlite`/`PostgreSQL` backend. |
 
 ---
 
@@ -75,66 +87,53 @@ $$PDI = 100 - \sum_{i=1}^{n} \left( W_{\text{severity}} \times D_{\text{category
 
 ---
 
-## 🏛️ System Architecture Diagram
+## 🏛️ Technical Architecture Flowchart
 
 ```mermaid
 flowchart TB
-    subgraph SENSING["1. SENSING & CAPTURE LAYER"]
-        BusCam["🚌 Public Transit Fleet Dashcams\n(dashcam_simulator.py • 25 FPS)"]
-        MobileCam["📱 Mobile Field Camera\n(BusCameraModal.tsx • QR / LAN Stream)"]
-        CitizenPortal["🏛️ Citizen Reporting Portal\n(ReportModal.tsx • Live GPS & EXIF)"]
+    %% Definitions
+    subgraph SENSING_LAYER ["1. Sensing & Ingestion (Edge)"]
+        Dashcam["🚌 Fleet Dashcam\n(OpenCV / Mobile PWA)"]
+        GPS["📍 EXIF & Browser GPS\n(Geo-tagging)"]
+        Dashcam --> GPS
     end
 
-    subgraph GATEWAY["2. INGESTION & GATEWAY LAYER (FastAPI)"]
-        StreamVal["🛡️ Active Stream Validator\n(Rejects Inactive / Black Frames)"]
-        ExifParser["📍 Hardware EXIF GPS Extractor\n(DMS to Decimal Degrees Parser)"]
-        RateLimit["⏳ SlowAPI Rate Limiter\n(120 req/min • Brute Force Protection)"]
-        MagicBytes["🔍 Magic-Byte File Validator\n(JPEG / PNG / WebP Header Inspection)"]
+    subgraph BACKEND_API ["2. FastAPI Backend & Processing"]
+        API_Gate["🚪 /api/incidents\n(REST Ingestion)"]
+        Validator["🛡️ Magic Byte / Stream Validator"]
         
-        BusCam --> StreamVal
-        MobileCam --> StreamVal
-        CitizenPortal --> ExifParser
-        StreamVal --> MagicBytes
-        ExifParser --> MagicBytes
-        MagicBytes --> RateLimit
-    end
-
-    subgraph AI_PIPELINE["3. COMPUTER VISION & INTELLIGENCE PIPELINE"]
-        YOLO["🧠 YOLOv8 Multi-Class Classifier\n(Indian Road Anomaly Dataset)"]
-        ConfFilter["🎯 Confidence Gate (tau >= 0.10)\nSeverity & Dynamic Category Assign"]
-        SpatialDedupe["📐 Spatial Deduplication Engine\n(5-Meter Radius Cluster Matcher)"]
+        subgraph AI_PIPELINE ["🧠 YOLOv12 AI Pipeline"]
+            Model["YOLOv12s-RDD2022\n(Road Damage)"]
+            SeverityMap["Severity & Threshold\nHeuristics"]
+            Model --> SeverityMap
+        end
         
-        RateLimit --> YOLO
-        YOLO --> ConfFilter
-        ConfFilter --> SpatialDedupe
-    end
-
-    subgraph DATA_LAYER["4. DATA & PERSISTENCE LAYER"]
-        DualDB[("🗄️ Dual Database Engine\nPostgreSQL asyncpg / SQLite aiosqlite")]
-        Storage["☁️ Storage Manager\n(Cloudinary CDN / Local Disk Uploads)"]
+        DB[("🗄️ Database\n(SQLite/PostgreSQL)")]
+        Storage["☁️ Storage\n(Local/Cloudinary)"]
         
-        SpatialDedupe --> DualDB
-        SpatialDedupe --> Storage
+        API_Gate --> Validator
+        Validator --> Model
+        SeverityMap --> DB
+        SeverityMap --> Storage
     end
 
-    subgraph BROADCAST["5. REAL-TIME EVENT BROADCAST"]
-        WSManager["📡 Full-Duplex WebSocket Broadcast Hub\n(sub-50ms Event Delivery)"]
-        DualDB --> WSManager
+    subgraph REAL_TIME ["3. Event Driven Layer"]
+        WSManager["📡 WebSocket Broadcast Hub"]
+        DB --> WSManager
     end
 
-    subgraph COMMAND_CENTER["6. MUNICIPAL COMMAND CENTER & CONSUMERS"]
-        GisMap["🗺️ Authentic Google Maps GIS\n(Streets / Satellite / Dark • Vidisha Corridors)"]
-        PdiEngine["📊 PDI Corridor Forecaster\n(Monsoon Stress Simulator • 15d/30d Wear)"]
-        SafeNav["🧭 Safe-Route Emergency Router\n(Fastest vs Safest Bypass Navigation)"]
-        ContractorDispatch["📲 WhatsApp SLA Dispatch Gateway\n(Google Maps Turn Navigation Links)"]
-        PowVerifier["🛠️ Proof-of-Work Verification\n(Before/After Smoothness Compaction AI)"]
+    subgraph FRONTEND ["4. React Command Center (Client)"]
+        UI_Map["🗺️ GIS Map View\n(React Google Maps)"]
+        UI_Feed["📋 Live Incident Feed"]
+        UI_Analytics["📊 Analytics & PDI"]
         
-        WSManager --> GisMap
-        DualDB --> PdiEngine
-        DualDB --> SafeNav
-        DualDB --> ContractorDispatch
-        ContractorDispatch --> PowVerifier
+        WSManager --> UI_Feed
+        WSManager --> UI_Map
+        DB --> UI_Analytics
     end
+
+    %% Connections
+    GPS --> API_Gate
 ```
 
 ---

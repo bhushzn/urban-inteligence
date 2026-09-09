@@ -27,7 +27,7 @@ BUS_NUMBER = random.randint(101, 999)
 VIDISHA_STOPS = [
     {"name": "Madhav Ganj Hub", "lat": 23.5240, "lng": 77.8115, "ward": "Ward 4"},
     {"name": "Station Road Lane", "lat": 23.5226, "lng": 77.8148, "ward": "Ward 12"},
-    {"name": "Neemtal Commercial Area", "lat": 23.5190, "lng": 77.8064, "ward": "Ward 7"},
+    {"name": "Neemtal Lake Promenade", "lat": 23.5190, "lng": 77.8064, "ward": "Ward 7"},
     {"name": "Durga Nagar Arterial", "lat": 23.5170, "lng": 77.8171, "ward": "Ward 9"},
     {"name": "Sanchi Highway Link", "lat": 23.5050, "lng": 77.7750, "ward": "Ward 2"},
     {"name": "Ahmedpur Link Road", "lat": 23.5350, "lng": 77.8100, "ward": "Ward 14"}
@@ -165,6 +165,18 @@ while True:
 
     # Upload check
     if force_upload or (current_time - last_upload_time >= args.interval) or args.test:
+        # Guard: Don't capture blank or pitch black frames when camera is not on or lens is covered
+        if not use_synthetic and frame is not None:
+            mean_val = float(np.mean(frame))
+            std_val = float(np.std(frame))
+            if mean_val < 15.0 and std_val < 10.0:
+                print("⚠️ [CityEye Dashcam] Camera frame is pitch black or lens is covered. Skipping capture.")
+                last_upload_time = current_time
+                continue
+            if std_val < 4.0:
+                print("⚠️ [CityEye Dashcam] Camera frame is blank/uniform. Skipping capture.")
+                last_upload_time = current_time
+                continue
         print(f"\n📸 [{time_str}] Capturing frame from Bus #{BUS_NUMBER}...")
         
         # Add slight jitter for realistic movement along the corridor

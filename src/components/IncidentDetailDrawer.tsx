@@ -6,6 +6,7 @@ import {
   ExternalLink,
   CheckCircle,
   HardHat,
+  Trash2,
   Cpu,
   Layers,
   Crosshair,
@@ -21,6 +22,8 @@ interface Props {
   onVerify: (id: number) => void;
   onResolve: (id: number) => void;
   onDispatch: (inc: Incident) => void;
+  onDelete?: (id: number) => void;
+  onDeleteImage?: (id: number) => void;
   user: User | null;
 }
 
@@ -31,6 +34,8 @@ export default function IncidentDetailDrawer({
   onVerify,
   onResolve,
   onDispatch,
+  onDelete,
+  onDeleteImage,
   user,
 }: Props) {
   if (!inc) return null;
@@ -106,7 +111,19 @@ export default function IncidentDetailDrawer({
               <span className="font-semibold text-slate-300 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-sky-400" /> High-Resolution Evidence
               </span>
-              <span className="font-mono text-[11px] text-slate-500">EXIF Timestamp: {inc.timestamp_label}</span>
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-[11px] text-slate-500">EXIF Timestamp: {inc.timestamp_label}</span>
+                {inc.image_url && onDeleteImage && (
+                  <button
+                    onClick={() => onDeleteImage(inc.id)}
+                    title="Remove photographic evidence from this incident"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-white text-[10px] font-semibold transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-2.5 h-2.5 text-rose-400" />
+                    <span>Delete Image</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="relative w-full h-64 rounded-lg bg-black border border-white/10 overflow-hidden">
@@ -242,6 +259,19 @@ export default function IncidentDetailDrawer({
 
         {/* Drawer Action Footer */}
         <div className="px-5 py-3.5 border-t border-white/10 bg-[#0a0f1c] flex items-center justify-between gap-3 shrink-0">
+          {onDelete && (
+            <button
+              onClick={() => {
+                onDelete(inc.id);
+                onClose();
+              }}
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+              title="Permanently delete this incident"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Delete</span>
+            </button>
+          )}
           {!inc.verified && !inc.resolved && (
             <button
               onClick={() => {

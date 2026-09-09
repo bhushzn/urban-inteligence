@@ -10,7 +10,9 @@ import {
   AlertTriangle,
   Flame,
   Shield,
-  Navigation
+  Navigation,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 
 // Fix Leaflet default icon issue with Vite
@@ -140,6 +142,21 @@ function MapController({ flyTarget }: { flyTarget: [number, number] | null }) {
   return null;
 }
 
+function RouteController({ activeRoute }: { activeRoute?: SafeRouteResponse | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (activeRoute && activeRoute.safest_route && activeRoute.safest_route.waypoints.length > 0) {
+      const allPoints = [
+        ...activeRoute.safest_route.waypoints,
+        ...activeRoute.fastest_route.waypoints,
+      ];
+      const bounds = L.latLngBounds(allPoints);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+    }
+  }, [activeRoute, map]);
+  return null;
+}
+
 interface Props {
   incidents: Incident[];
   activeIncident: Incident | null;
@@ -154,48 +171,75 @@ interface Props {
 // Vidisha city centre (Madhav Ganj / Station Road / Neemtal)
 const VIDISHA_CENTER: [number, number] = [23.5230, 77.8120];
 
-// Dedicated Vidisha Transit Corridors
+// Dedicated Vidisha Transit Corridors - Snapped along actual Google Maps Road Networks
 const BRTS_CORRIDORS: [number, number][][] = [
-  // Corridor 1: Sanchi Highway Link ➔ Neemtal ➔ Madhav Ganj ➔ Vidisha Railway Station
+  // Corridor 1: Sanchi Highway (SH-19) ➔ Civil Lines ➔ Neemtal Lake Road ➔ Tilak Chowk ➔ Madhav Ganj ➔ Station Road
   [
     [23.5050, 77.7750],
-    [23.5130, 77.7920],
+    [23.5072, 77.7801],
+    [23.5098, 77.7852],
+    [23.5125, 77.7905],
+    [23.5142, 77.7940],
+    [23.5160, 77.7982],
+    [23.5178, 77.8025],
     [23.5190, 77.8064],
+    [23.5205, 77.8080],
+    [23.5222, 77.8098],
     [23.5240, 77.8115],
+    [23.5238, 77.8130],
+    [23.5230, 77.8140],
     [23.5226, 77.8148],
+    [23.5220, 77.8162],
   ],
-  // Corridor 2: Ahmedpur Road ➔ Durga Nagar ➔ Betwa River Ghats
+  // Corridor 2: Ahmedpur Road ➔ Collectorate ➔ Madhav Ganj ➔ Station Rd ➔ Durga Nagar ➔ Betwa Ghats
   [
     [23.5350, 77.8100],
-    [23.5280, 77.8110],
+    [23.5320, 77.8103],
+    [23.5290, 77.8108],
+    [23.5265, 77.8112],
+    [23.5240, 77.8115],
     [23.5226, 77.8148],
+    [23.5202, 77.8155],
+    [23.5185, 77.8162],
     [23.5170, 77.8171],
-    [23.5290, 77.8250],
+    [23.5188, 77.8202],
+    [23.5215, 77.8228],
+    [23.5245, 77.8250],
   ],
+  // Corridor 3: Neemtal Lake Loop ➔ South Ring Road ➔ Durga Nagar Link
+  [
+    [23.5190, 77.8064],
+    [23.5175, 77.8100],
+    [23.5170, 77.8140],
+    [23.5170, 77.8171],
+    [23.5202, 77.8155],
+    [23.5226, 77.8148],
+  ]
 ];
 
-const BRTS_CHECKPOINTS = [
+interface BRTSCheckpoint {
+  id: string;
+  name: string;
+  coords: [number, number];
+  status: "clear" | "warning";
+  compliance: string;
+  desc: string;
+}
+
+const BRTS_CHECKPOINTS: BRTSCheckpoint[] = [
   {
     id: "brts-1",
     name: "Madhav Ganj Hub",
-    coords: [23.5240, 77.8115] as [number, number],
-    status: "clear" as const,
+    coords: [23.5240, 77.8115],
+    status: "clear",
     compliance: "98% Clear",
     desc: "Active AI Camera Unit VD-101 scanning lane",
   },
   {
-    id: "brts-2",
-    name: "Neemtal Chokepoint",
-    coords: [23.5190, 77.8064] as [number, number],
-    status: "warning" as const,
-    compliance: "Encroachment Alert",
-    desc: "Vegetable market obstruction detected in transit corridor",
-  },
-  {
     id: "brts-3",
     name: "Station Road Lane",
-    coords: [23.5226, 77.8148] as [number, number],
-    status: "clear" as const,
+    coords: [23.5226, 77.8148],
+    status: "clear",
     compliance: "96% Clear",
     desc: "Smooth transit speed: 34 km/h average",
   },
@@ -215,7 +259,7 @@ interface BusVehicle {
 
 const INITIAL_BUSES: BusVehicle[] = [
   { id: "b1", number: "101", route: "Sanchi Rd ➔ Madhav Ganj", lat: 23.5150, lng: 77.7950, speed: 32, deltaLat: 0.0004, deltaLng: 0.0005 },
-  { id: "b2", number: "202", route: "Station Rd ➔ Neemtal", lat: 23.5226, lng: 77.8148, speed: 28, deltaLat: -0.0004, deltaLng: -0.0003 },
+  { id: "b2", number: "202", route: "Station Rd ➔ District Hospital", lat: 23.5226, lng: 77.8148, speed: 28, deltaLat: -0.0004, deltaLng: -0.0003 },
   { id: "b3", number: "303", route: "Ahmedpur Rd ➔ Collectorate", lat: 23.5310, lng: 77.8080, speed: 35, deltaLat: -0.0005, deltaLng: 0.0002 },
   { id: "b4", number: "404", route: "Durga Nagar ➔ Betwa Ghats", lat: 23.5170, lng: 77.8171, speed: 30, deltaLat: 0.0003, deltaLng: 0.0004 },
 ];
@@ -234,6 +278,32 @@ export default function MapView({
   const [mapStyle, setMapStyle] = useState<"google-streets" | "google-hybrid" | "dark">("google-streets");
   const [buses, setBuses] = useState<BusVehicle[]>(INITIAL_BUSES);
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
+  const [isFullView, setIsFullView] = useState<boolean>(false);
+
+  // Keyboard shortcut: Escape to exit full view map
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullView) {
+        setIsFullView(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullView]);
+
+  // Force Leaflet map resize calculation when toggling full view
+  useEffect(() => {
+    const t1 = setTimeout(() => {
+      if (mapRef.current) mapRef.current.invalidateSize();
+    }, 100);
+    const t2 = setTimeout(() => {
+      if (mapRef.current) mapRef.current.invalidateSize();
+    }, 350);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [isFullView]);
 
   // Animate transit bus fleet positions along corridors
   useEffect(() => {
@@ -270,7 +340,13 @@ export default function MapView({
   });
 
   return (
-    <div className="cmd-surface rounded-lg overflow-hidden flex flex-col h-full min-h-[400px] lg:min-h-[480px] border border-white/10 shadow-sm relative">
+    <div
+      className={
+        isFullView
+          ? "fixed inset-0 z-[99990] w-screen h-screen bg-[#080c14] flex flex-col rounded-none border-0 shadow-2xl"
+          : "cmd-surface rounded-lg overflow-hidden flex flex-col h-full min-h-[400px] lg:min-h-[480px] border border-white/10 shadow-sm relative"
+      }
+    >
       {/* Top GIS Operations Toolbar */}
       <div className="bg-[#0b101c] border-b border-white/10 px-3.5 py-2 flex flex-wrap items-center justify-between gap-2.5 z-10">
         <div className="flex items-center gap-2">
@@ -278,6 +354,11 @@ export default function MapView({
           <span className="font-semibold text-xs text-white uppercase tracking-wider">
             GIS Command Map
           </span>
+          {isFullView && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              FULL VIEW MODE (Press Esc to exit)
+            </span>
+          )}
           <span className="text-[11px] text-slate-400 font-mono hidden 2xl:inline">
             • Vidisha, MP [23.5230° N, 77.8120° E]
           </span>
@@ -292,7 +373,7 @@ export default function MapView({
           {[
             { name: "Madhav Ganj", coords: [23.5240, 77.8115] as [number, number], priority: true },
             { name: "Station Rd", coords: [23.5226, 77.8148] as [number, number], priority: true },
-            { name: "Neemtal", coords: [23.5190, 77.8064] as [number, number], priority: true },
+            { name: "District Hospital", coords: [23.5280, 77.8105] as [number, number], priority: true },
             { name: "Durga Nagar", coords: [23.5170, 77.8171] as [number, number], priority: false },
             { name: "Sanchi Rd", coords: [23.5050, 77.7750] as [number, number], priority: false },
           ].map(w => (
@@ -308,34 +389,59 @@ export default function MapView({
           ))}
         </div>
 
-        {/* Map Tile Mode Selector */}
-        <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded border border-white/10 text-[11px]">
+        {/* Map Tile Mode Selector & Full View Map Toggle */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded border border-white/10 text-[11px]">
+            <button
+              onClick={() => setMapStyle("google-streets")}
+              title="Google Maps Streets"
+              className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                mapStyle === "google-streets" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Roadmap
+            </button>
+            <button
+              onClick={() => setMapStyle("google-hybrid")}
+              title="Google Maps Satellite Hybrid"
+              className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                mapStyle === "google-hybrid" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Satellite
+            </button>
+            <button
+              onClick={() => setMapStyle("dark")}
+              title="Dark Tactical Canvas"
+              className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                mapStyle === "dark" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Dark
+            </button>
+          </div>
+
+          {/* Full View Map Button */}
           <button
-            onClick={() => setMapStyle("google-streets")}
-            title="Google Maps Streets"
-            className={`px-2 py-0.5 rounded font-medium transition-colors ${
-              mapStyle === "google-streets" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
+            onClick={() => setIsFullView(!isFullView)}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all border shadow-sm cursor-pointer ${
+              isFullView
+                ? "bg-rose-600 hover:bg-rose-500 text-white border-rose-500 shadow-rose-950/40"
+                : "bg-sky-600 hover:bg-sky-500 text-white border-sky-500 shadow-sky-950/40"
             }`}
+            title={isFullView ? "Exit Full View Map (Esc)" : "Open GIS Map in Full View to explore clearly"}
           >
-            Roadmap
-          </button>
-          <button
-            onClick={() => setMapStyle("google-hybrid")}
-            title="Google Maps Satellite Hybrid"
-            className={`px-2 py-0.5 rounded font-medium transition-colors ${
-              mapStyle === "google-hybrid" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            Satellite
-          </button>
-          <button
-            onClick={() => setMapStyle("dark")}
-            title="Dark Tactical Canvas"
-            className={`px-2 py-0.5 rounded font-medium transition-colors ${
-              mapStyle === "dark" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            Dark
+            {isFullView ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span>Exit Full View</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Full View Map</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -370,6 +476,7 @@ export default function MapView({
           {/* Programmatic Navigation */}
           <PanTo incident={activeIncident} />
           <MapController flyTarget={flyTarget} />
+          <RouteController activeRoute={activeRoute} />
 
           {/* Dynamic Risk Density Heatmap Layer */}
           {mapLayers.heatmap && visibleIncidents.map((inc) => {
@@ -577,7 +684,7 @@ export default function MapView({
           {[
             { key: "potholes" as const, label: "Incidents", icon: <AlertTriangle className="w-3 h-3 text-red-400" /> },
             { key: "fleet" as const, label: "Fleet", icon: <Bus className="w-3 h-3 text-sky-400" /> },
-            { key: "busLane" as const, label: "Transit Lanes", icon: <Shield className="w-3 h-3 text-cyan-400" /> },
+            { key: "busLane" as const, label: "Transit Road Paths", icon: <Shield className="w-3 h-3 text-cyan-400" /> },
             { key: "heatmap" as const, label: "Heatmap", icon: <Flame className="w-3 h-3 text-amber-400" /> },
           ].map(({ key, label, icon }) => (
             <button

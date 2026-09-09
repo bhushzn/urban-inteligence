@@ -44,6 +44,29 @@ if IS_CLOUDINARY_CONFIGURED:
 else:
     print(f"[Storage] Using local disk storage in ./{UPLOADS_DIR}")
 
+def is_blank_or_dark_image(file_bytes: bytes) -> Tuple[bool, Optional[str]]:
+    """Checks whether the image is pitch black (camera off/covered) or a solid blank color"""
+    try:
+        from PIL import Image, ImageStat
+        import io
+        img = Image.open(io.BytesIO(file_bytes)).convert("L")
+        img.thumbnail((120, 120))
+        stat = ImageStat.Stat(img)
+        mean_brightness = stat.mean[0]
+        stddev = stat.stddev[0]
+
+        # Pitch black or lens covered (mean brightness < 12 and stddev < 8)
+        if mean_brightness < 12.0 and stddev < 8.0:
+            return True, "Image is pitch black or camera lens was covered / camera inactive."
+        
+        # Solid uniform blank color (stddev < 3.0)
+        if stddev < 3.0:
+            return True, "Image is completely blank or uniform solid color."
+
+        return False, None
+    except Exception:
+        return False, None
+
 def validate_image_file(filename: str, file_bytes: bytes, max_bytes: int = MAX_FILE_SIZE_BYTES) -> Tuple[bool, Optional[str]]:
     """Validate image extension, size, and header bytes with PIL and signature inspection"""
     if not filename:
@@ -61,23 +84,30 @@ def validate_image_file(filename: str, file_bytes: bytes, max_bytes: int = MAX_F
         return False, "Uploaded file is too small to be a valid image."
 
     # First attempt: PIL header verification
+    pil_verified = False
     try:
         from PIL import Image
         import io
         img = Image.open(io.BytesIO(file_bytes))
         img.verify()
-        return True, None
+        pil_verified = True
     except Exception:
         pass
 
-    # Fallback: Verify known image signatures (magic numbers)
-    is_jpeg = file_bytes.startswith(b'\xff\xd8\xff')
-    is_png = file_bytes.startswith(b'\x89PNG\r\n\x1a\n')
-    is_webp = len(file_bytes) >= 12 and file_bytes[:4] == b'RIFF' and file_bytes[8:12] == b'WEBP'
-    is_heic = len(file_bytes) >= 12 and file_bytes[4:8] == b'ftyp'
+    if not pil_verified:
+        # Fallback: Verify known image signatures (magic numbers)
+        is_jpeg = file_bytes.startswith(b'\xff\xd8\xff')
+        is_png = file_bytes.startswith(b'\x89PNG\r\n\x1a\n')
+        is_webp = len(file_bytes) >= 12 and file_bytes[:4] == b'RIFF' and file_bytes[8:12] == b'WEBP'
+        is_heic = len(file_bytes) >= 12 and file_bytes[4:8] == b'ftyp'
 
-    if not (is_jpeg or is_png or is_webp or is_heic):
-        return False, "Corrupted image file or unrecognized image format signature."
+        if not (is_jpeg or is_png or is_webp or is_heic):
+            return False, "Corrupted image file or unrecognized image format signature."
+
+    # Guard: Don't allow blank, pitch black, or irrelevant solid images
+    is_blank, blank_reason = is_blank_or_dark_image(file_bytes)
+    if is_blank:
+        return False, blank_reason
 
     return True, None
 
