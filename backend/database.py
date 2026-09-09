@@ -135,6 +135,7 @@ async def fetch_all(query: str, params: tuple = ()) -> List[Tuple]:
 # ─── Seed Data (Authentic Vidisha Municipal Telemetry with Real Photos) ──────────────
 SEED_INCIDENTS = [
     ("Severe Road Crater / Pothole",    "High",   23.5240, 77.8115, "Ward 4",  "Madhav Ganj Main Market, Vidisha",  True,  "road", "real_pothole_mpnagar.jpg"),
+    ("Commercial Lane Pothole & Subgrade Rutting", "High", 23.5248, 77.8122, "Ward 4", "Madhav Ganj North Commercial Row, Vidisha", True, "road", "real_pothole_mpnagar.jpg"),
     ("Neemtal Lake Surface Waste & Weed Inflow", "Medium", 23.5190, 77.8064, "Ward 7",  "Neemtal Lake Reservoir & Promenade, Vidisha", True, "water", "real_waterlogging_newmarket.jpg"),
     ("Transit Lane Severe Waterlogging","High",   23.5226, 77.8148, "Ward 12", "Station Road Underpass, Vidisha",    True,  "water", "real_waterlogging_newmarket.jpg"),
     ("Structural Pavement Subsidence",   "Medium", 23.5050, 77.7750, "Ward 2",  "Sanchi Road Highway Link, Vidisha", True,  "road", "road_subsidence_4.jpg"),

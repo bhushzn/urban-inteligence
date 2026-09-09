@@ -15,6 +15,7 @@ import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { SafeRouteModal } from "./components/SafeRouteModal";
 import { LiveDashcamModal } from "./components/LiveDashcamModal";
 import { CivicKarmaModal } from "./components/CivicKarmaModal";
+import { WardAnalyticsModal } from "./components/WardAnalyticsModal";
 import { EnvironmentalBar } from "./components/EnvironmentalBar";
 import { api, connectWebSocket, getStoredUser, DEFAULT_ANALYTICS } from "./api";
 import type { Incident, Analytics, WSEvent, User, SafeRouteResponse } from "./api";
@@ -35,6 +36,7 @@ export default function App() {
   const [showSafeRouteModal, setShowSafeRouteModal] = useState(false);
   const [showDashcamModal, setShowDashcamModal] = useState(false);
   const [showKarmaModal, setShowKarmaModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [activeSafeRoute, setActiveSafeRoute] = useState<SafeRouteResponse | null>(null);
   const [dispatchIncidentTarget, setDispatchIncidentTarget] = useState<Incident | null>(null);
   const [verifyIncidentTarget, setVerifyIncidentTarget] = useState<Incident | null>(null);
@@ -222,6 +224,7 @@ export default function App() {
         onOpenSafeRoute={() => setShowSafeRouteModal(true)}
         onOpenDashcam={() => setShowDashcamModal(true)}
         onOpenKarma={() => setShowKarmaModal(true)}
+        onOpenAnalytics={() => setShowAnalyticsModal(true)}
       />
 
       {/* Secondary Status Bar / Telemetry Ribbon */}
@@ -265,7 +268,10 @@ export default function App() {
                 onInspectIncident={(inc) => setInspectIncidentTarget(inc)}
               />
             </div>
-            <AnalyticsPanel analytics={analytics} />
+            <AnalyticsPanel
+              analytics={analytics}
+              onExpand={() => setShowAnalyticsModal(true)}
+            />
           </div>
 
           {/* Right: Live Incident Feed (Responsive Width for 1024px, 1280px, 1366px, 1440px, 1600px+ Laptops) */}
@@ -394,6 +400,14 @@ export default function App() {
       <CivicKarmaModal
         isOpen={showKarmaModal}
         onClose={() => setShowKarmaModal(false)}
+      />
+
+      {/* Municipal Ward & SLA Intelligence Modal */}
+      <WardAnalyticsModal
+        isOpen={showAnalyticsModal}
+        onClose={() => setShowAnalyticsModal(false)}
+        analytics={analytics}
+        onRefresh={loadAll}
       />
 
       {/* Contractor SLA Work Order Modal */}

@@ -1,11 +1,12 @@
 import type { Analytics } from "../api";
-import { BarChart2, CheckCircle, PieChart } from "lucide-react";
+import { BarChart2, CheckCircle, PieChart, Maximize2 } from "lucide-react";
 
 interface Props {
   analytics: Analytics | null;
+  onExpand?: () => void;
 }
 
-export default function AnalyticsPanel({ analytics }: Props) {
+export default function AnalyticsPanel({ analytics, onExpand }: Props) {
   if (!analytics) return null;
 
   const maxWard = Math.max(...(analytics.ward_breakdown.map(w => w.count)), 1);
@@ -25,7 +26,7 @@ export default function AnalyticsPanel({ analytics }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {/* Anomalies by Municipal Ward */}
-      <div className="cmd-surface rounded-lg p-3.5 border border-white/10">
+      <div className="cmd-surface rounded-lg p-3.5 border border-white/10 relative group">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-sky-400" />
@@ -33,7 +34,18 @@ export default function AnalyticsPanel({ analytics }: Props) {
               Anomalies By Ward
             </span>
           </div>
-          <span className="font-mono text-[11px] text-slate-400 font-semibold">{analytics.total} Total</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] text-slate-400 font-semibold">{analytics.total} Total</span>
+            {onExpand && (
+              <button
+                onClick={onExpand}
+                title="Open Detailed Ward Analytics Modal"
+                className="p-1 rounded bg-white/5 hover:bg-white/10 text-slate-400 hover:text-sky-300 transition-colors"
+              >
+                <Maximize2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-end gap-1.5 h-24 pt-2">

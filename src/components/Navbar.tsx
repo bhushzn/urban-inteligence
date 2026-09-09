@@ -33,6 +33,7 @@ interface Props {
   onOpenSafeRoute?: () => void;
   onOpenDashcam?: () => void;
   onOpenKarma?: () => void;
+  onOpenAnalytics?: () => void;
 }
 
 export default function Navbar({
@@ -49,6 +50,7 @@ export default function Navbar({
   onOpenSafeRoute,
   onOpenDashcam,
   onOpenKarma,
+  onOpenAnalytics,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -227,6 +229,16 @@ export default function Navbar({
             <span className="hidden sm:inline">Citizen Portal</span>
           </button>
 
+          {/* Dedicated Analytics Dashboard Launcher */}
+          <button
+            onClick={onOpenAnalytics}
+            title="Ward Distribution & SLA Performance Analytics"
+            className="flex items-center justify-center gap-2 h-10 px-3 sm:px-4 rounded-lg bg-slate-800/80 hover:bg-slate-700/90 active:bg-slate-800 border border-slate-700/80 hover:border-slate-500/80 text-slate-200 hover:text-white text-xs font-semibold transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <BarChart3 className="w-5 h-5 text-indigo-400 stroke-[2] shrink-0" />
+            <span className="hidden sm:inline">Analytics</span>
+          </button>
+
           {/* Command Modules Dropdown */}
           <div
             className="relative"
@@ -257,6 +269,17 @@ export default function Navbar({
                 <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 mb-1">
                   Operational Command Tools
                 </div>
+
+                <button
+                  onClick={() => { setMenuOpen(false); onOpenAnalytics?.(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded hover:bg-white/5 text-left text-xs text-slate-300 hover:text-white transition-colors"
+                >
+                  <BarChart3 className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <div>
+                    <div className="font-semibold leading-tight">Ward & SLA Analytics</div>
+                    <div className="text-[10px] text-slate-400">Spatial Density & YOLO Breakdown</div>
+                  </div>
+                </button>
 
                 <button
                   onClick={() => { setMenuOpen(false); onOpenPDI?.(); }}
