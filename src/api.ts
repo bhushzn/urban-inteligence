@@ -1,14 +1,32 @@
 // API Client for CityEye Backend
-const RAW_API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
-export const BASE_URL = RAW_API_URL.replace(/\/+$/, "");
+const getBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== "") {
+    return (import.meta.env.VITE_API_URL as string).replace(/\/+$/, "");
+  }
+  return import.meta.env.PROD ? "" : "http://localhost:8000";
+};
+
+export const BASE_URL = getBaseUrl();
 
 // Auto-derive WebSocket URL (http -> ws, https -> wss)
 const deriveWsUrl = (apiUrl: string): string => {
   if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL as string;
-  const wsProto = apiUrl.startsWith("https://") ? "wss://" : "ws://";
-  const host = apiUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-  return `${wsProto}${host}/ws`;
+
+  if (apiUrl && (apiUrl.startsWith("http://") || apiUrl.startsWith("https://"))) {
+    const wsProto = apiUrl.startsWith("https://") ? "wss://" : "ws://";
+    const host = apiUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    return `${wsProto}${host}/ws`;
+  }
+
+  // Same-origin fallback in browser when deployed with rewrites/proxies
+  if (typeof window !== "undefined") {
+    const wsProto = window.location.protocol === "https:" ? "wss://" : "ws://";
+    return `${wsProto}${window.location.host}/ws`;
+  }
+
+  return "ws://localhost:8000/ws";
 };
+
 export const WS_URL = deriveWsUrl(BASE_URL);
 
 export interface Incident {
