@@ -265,7 +265,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
               {/* Official Sign-off Footer */}
               <div className="pt-4 border-t border-slate-800 flex justify-between text-[11px] text-slate-400 print:text-black">
                 <div>
-                  Certified by: <strong className="text-slate-200 print:text-black">UrbanIntel AI Municipal Core Engine</strong>
+                  Certified by: <strong className="text-slate-200 print:text-black">CityEye AI Municipal Core Engine</strong>
                 </div>
                 <div>
                   Commissioner Sign-off: <strong className="text-slate-200 print:text-black">Dr. S. K. Verma, IAS</strong>

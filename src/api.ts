@@ -1,4 +1,4 @@
-// API Client for UrbanIntel AI Backend
+// API Client for CityEye AI Backend
 const RAW_API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 const BASE_URL = RAW_API_URL.replace(/\/+$/, "");
 
@@ -238,15 +238,15 @@ export interface SystemHealth {
 }
 
 // ─── Token Management ──────────────────────────────────────────────────────
-const TOKEN_KEY = "urbanintel_token";
-const USER_KEY = "urbanintel_user";
+const TOKEN_KEY = "cityeye_token";
+const USER_KEY = "cityeye_user";
 
 export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) || localStorage.getItem("urbanintel_token");
 }
 
 export function getStoredUser(): User | null {
-  const raw = localStorage.getItem(USER_KEY);
+  const raw = localStorage.getItem(USER_KEY) || localStorage.getItem("urbanintel_user");
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -262,6 +262,8 @@ export function setStoredAuth(token: string | null, user: User | null) {
   } else {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem("urbanintel_token");
+    localStorage.removeItem("urbanintel_user");
   }
 }
 
@@ -499,7 +501,7 @@ export function connectWebSocket(
     ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
-      console.log("[WS] Connected to UrbanIntel backend");
+      console.log("[WS] Connected to CityEye backend");
       onConnect?.();
     };
 

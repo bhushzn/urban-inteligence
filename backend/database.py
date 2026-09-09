@@ -1,5 +1,5 @@
 """
-UrbanIntel AI — Database Abstraction Layer
+CityEye AI — Database Abstraction Layer
 Supports:
 1. PostgreSQL (via asyncpg) for cloud deployment (Render, Supabase, Neon, Railway)
 2. SQLite (via aiosqlite) for local development and offline resilience
@@ -23,7 +23,13 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-DB_PATH = os.getenv("SQLITE_DB_PATH", os.path.join(BASE_DIR, "urbanintel.db"))
+
+# Default SQLite path (prioritize cityeye.db, fallback to urbanintel.db if present)
+_default_sqlite = os.path.join(BASE_DIR, "cityeye.db")
+if not os.path.exists(_default_sqlite) and os.path.exists(os.path.join(BASE_DIR, "urbanintel.db")):
+    _default_sqlite = os.path.join(BASE_DIR, "urbanintel.db")
+
+DB_PATH = os.getenv("SQLITE_DB_PATH", _default_sqlite)
 
 # Detect backend engine
 IS_POSTGRES = (

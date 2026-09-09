@@ -123,7 +123,7 @@ export default function App() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `UrbanIntel_Ward_Report_${new Date().toLocaleDateString("en-IN").replace(/\//g,"-")}.csv`;
+    a.download = `CityEye_Ward_Report_${new Date().toLocaleDateString("en-IN").replace(/\//g,"-")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     setExportToast(true);
@@ -217,7 +217,7 @@ export default function App() {
       </main>
 
       <div className="text-center pb-4 text-xs text-slate-600">
-        UrbanIntel AI • Smart India Hackathon 2024 • Problem Statement 26124 • Built with ❤️ for civic safety
+        CityEye AI • Smart India Hackathon 2024 • Problem Statement 26124 • Built with ❤️ for civic safety
       </div>
 
       {/* --- ALL MODALS (Rendered at Root level with z-[9999]) --- */}

@@ -52,7 +52,7 @@ export default function Navbar({
           </div>
           <div>
             <h1 className="font-display font-bold text-white text-lg leading-none tracking-wide">
-              UrbanIntel <span className="text-cyan-400">AI</span>
+              CityEye <span className="text-cyan-400">AI</span>
             </h1>
             <p className="text-slate-500 text-xs font-medium mt-0.5">Smart City Command Center • SIH-26124</p>
           </div>

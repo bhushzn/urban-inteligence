@@ -219,7 +219,7 @@ export const CivicKarmaModal: React.FC<CivicKarmaModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-800 bg-slate-900 flex items-center justify-between text-xs text-slate-400">
-          <span>Points verified by UrbanIntel AI Civic Engine</span>
+          <span>Points verified by CityEye AI Civic Engine</span>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"

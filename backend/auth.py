@@ -1,5 +1,5 @@
 """
-UrbanIntel AI — Authentication Module
+CityEye AI — Authentication Module
 JWT-based auth with role-based access control (RBAC)
 Compatible with both PostgreSQL and SQLite
 """
@@ -13,7 +13,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import database
 
 # ─── Configuration ──────────────────────────────────────────────────────────
-SECRET_KEY = os.getenv("JWT_SECRET", "urbanintel-sih-2024-super-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET", "cityeye-sih-2024-super-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
 

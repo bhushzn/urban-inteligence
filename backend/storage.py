@@ -1,5 +1,5 @@
 """
-UrbanIntel AI — Image & Asset Storage Manager
+CityEye AI — Image & Asset Storage Manager
 Supports:
 1. Cloudinary upload for production cloud storage (Vercel / Render / Supabase)
 2. Local disk fallback for development / offline use
@@ -80,7 +80,7 @@ def _upload_to_cloudinary(file_bytes: bytes, filename: str) -> dict:
     public_id = f"incident_{int(time.time() * 1000)}"
     result = cloudinary.uploader.upload(
         file_bytes,
-        folder="urbanintel/incidents",
+        folder="cityeye/incidents",
         public_id=public_id,
         resource_type="image"
     )

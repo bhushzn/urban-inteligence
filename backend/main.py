@@ -1,5 +1,5 @@
 """
-UrbanIntel AI — FastAPI Backend (Production-Hardened)
+CityEye AI — FastAPI Backend (Production-Hardened)
 Real-time Smart City Command Center API
 SIH Problem Statement 26124
 """
@@ -52,7 +52,7 @@ from auth import (
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
 app = FastAPI(
-    title="UrbanIntel AI API",
+    title="CityEye AI API",
     version="2.0.0",
     description="Production-grade AI-powered Smart City Command Center backend."
 )
@@ -313,7 +313,7 @@ async def auto_incident_generator():
 @app.on_event("startup")
 async def startup():
     global yolo_model
-    print("[Main] Starting UrbanIntel AI Command Center Backend (v2.0 Hardened)...")
+    print("[Main] Starting CityEye AI Command Center Backend (v2.0 Hardened)...")
     
     # Initialize Database (PostgreSQL or SQLite) & seed demo users
     await database.init_db(password_hasher=hash_password)
@@ -331,7 +331,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    print("[Main] Shutting down UrbanIntel backend...")
+    print("[Main] Shutting down CityEye backend...")
     await database.close_db()
 
 # ─── Input Validation Models ────────────────────────────────────────────────
@@ -361,7 +361,7 @@ async def health():
 
     return {
         "status": "healthy" if db_health.get("status") == "connected" else "degraded",
-        "service": "UrbanIntel AI Command Center",
+        "service": "CityEye AI Command Center",
         "version": "2.0.0",
         "uptime_seconds": uptime_sec,
         "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -910,7 +910,7 @@ async def get_audit_summary():
     return {
         "report_id": "BMC-AUDIT-2026-Q3",
         "municipality": "Bhopal Municipal Corporation & Smart City Dev Corp Ltd",
-        "system": "UrbanIntel AI Autonomous Telemetry Platform",
+        "system": "CityEye AI Autonomous Telemetry Platform",
         "generated_at": datetime.now().strftime("%d %B %Y, %I:%M %p"),
         "reporting_cycle": "Q3 2026 Live Audit",
         "total_lane_km_monitored": 382.5,

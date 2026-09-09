@@ -1,8 +1,8 @@
-# UrbanIntel AI — Render.com Blueprint Specification
+# CityEye AI — Render.com Blueprint Specification
 services:
   # Backend FastAPI Service
   - type: web
-    name: urbanintel-api
+    name: cityeye-api
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
