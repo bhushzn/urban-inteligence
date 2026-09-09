@@ -61,16 +61,30 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
 
   const loadDevices = useCallback(async () => {
     try {
-      // Must request permission first so device labels are populated
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      // Temporarily request stream so browser populates human-readable device labels
+      let probeStream: MediaStream | null = null;
+      try {
+        probeStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch {
+        // Fall back to enumerating directly if already permitted
+      }
+      // CRITICAL: Stop probeStream tracks immediately to release hardware/Phone Link lock!
+      if (probeStream) {
+        probeStream.getTracks().forEach((t) => t.stop());
+      }
+
       const all = await navigator.mediaDevices.enumerateDevices();
       const cams = all
         .filter((d) => d.kind === "videoinput")
-        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Camera ${i + 1}` }));
+        .map((d, i) => ({
+          deviceId: d.deviceId,
+          label: d.label || (i === 0 ? "Integrated Laptop Camera" : `Camera Device ${i + 1}`),
+        }));
       setDevices(cams);
-      if (cams.length > 0) setSelectedDeviceId((prev) => prev || cams[0].deviceId);
+      return cams;
     } catch {
-      setCamError("Could not list cameras. Please allow camera permission.");
+      setCamError("Could not list cameras. Please allow camera permissions in your browser.");
+      return [];
     }
   }, []);
 
@@ -78,26 +92,40 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
     setCamError(null);
     setCamReady(false);
     stopStream();
+
     try {
-      const constraints: MediaStreamConstraints = {
-        video: deviceId
-          ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-          : { width: { ideal: 1280 }, height: { ideal: 720 } },
+      // Use ideal constraints instead of exact so virtual cams (Phone Link / DroidCam) never throw OverconstrainedError
+      const videoConstraints: MediaTrackConstraints = deviceId
+        ? { deviceId: { ideal: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { width: { ideal: 1280 }, height: { ideal: 720 } };
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: videoConstraints,
         audio: false,
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      });
+
       streamRef.current = stream;
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch {
+          // Handled via onLoadedMetadata or user interaction
+        }
         setCamReady(true);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("NotAllowedError") || msg.includes("Permission")) setCamError("Camera permission denied. Allow in browser settings.");
-      else if (msg.includes("NotFoundError")) setCamError("Selected camera not found or disconnected.");
-      else if (msg.includes("NotReadableError")) setCamError("Camera busy — close Teams/Zoom/Meet first.");
-      else setCamError(`Camera error: ${msg}`);
+      if (msg.includes("NotAllowedError") || msg.includes("Permission")) {
+        setCamError("Camera permission denied. Click the lock/camera icon in your address bar to allow.");
+      } else if (msg.includes("NotFoundError")) {
+        setCamError("Camera not found or disconnected. Try selecting Integrated Laptop Camera.");
+      } else if (msg.includes("NotReadableError")) {
+        setCamError("Camera busy — Phone Link or another app is currently locking it. Close Teams/Zoom or restart Phone Link.");
+      } else {
+        setCamError(`Camera error: ${msg}`);
+      }
     }
   }, [stopStream]);
 
@@ -111,16 +139,26 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
     }
   }, [ipUrl]);
 
-  // Start/stop device camera when mode or device changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Start/stop device camera when mode or modal opens
   useEffect(() => {
-    if (cameraMode === "device" && isOpen) { loadDevices().then(() => startCamera(selectedDeviceId)); }
-    else { stopStream(); }
+    let active = true;
+    if (cameraMode === "device" && isOpen) {
+      loadDevices().then((cams) => {
+        if (!active) return;
+        const initial = selectedDeviceId || (cams.length > 0 ? cams[0].deviceId : undefined);
+        if (!selectedDeviceId && initial) {
+          setSelectedDeviceId(initial);
+        }
+        startCamera(initial);
+      });
+    } else {
+      stopStream();
+    }
     if (cameraMode !== "ip") setIpConnected(false);
-  }, [cameraMode, isOpen]);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (cameraMode === "device" && isOpen && selectedDeviceId) startCamera(selectedDeviceId); }, [selectedDeviceId]);
+    return () => {
+      active = false;
+    };
+  }, [cameraMode, isOpen, loadDevices, startCamera]);
 
   useEffect(() => { if (!isOpen) { stopStream(); setCameraMode("sim"); setIpConnected(false); } }, [isOpen, stopStream]);
 
@@ -297,36 +335,122 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
             <>
               <div className="flex items-center space-x-3">
                 <span className="text-xs text-slate-400 font-medium whitespace-nowrap">📷 Select Camera:</span>
-                <select value={selectedDeviceId} onChange={(e) => setSelectedDeviceId(e.target.value)} className="flex-1 bg-slate-800 border border-slate-600 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 transition-colors">
-                  {devices.length === 0 && <option>Loading cameras…</option>}
-                  {devices.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label}</option>)}
+                <select
+                  value={selectedDeviceId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSelectedDeviceId(id);
+                    startCamera(id);
+                  }}
+                  className="flex-1 bg-slate-800 border border-slate-600 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 transition-colors"
+                >
+                  <option value="">Default Laptop / Integrated Camera</option>
+                  {devices.map((d) => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label}
+                    </option>
+                  ))}
                 </select>
-                <button onClick={loadDevices} className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium border border-slate-600">🔄 Refresh</button>
+                <button
+                  onClick={() => {
+                    loadDevices().then((cams) => {
+                      if (cams.length > 0) {
+                        const nextId = cams[0].deviceId;
+                        setSelectedDeviceId(nextId);
+                        startCamera(nextId);
+                      }
+                    });
+                  }}
+                  className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium border border-slate-600 transition-colors"
+                >
+                  🔄 Scan Devices
+                </button>
               </div>
+
               <div className="flex items-start space-x-2 bg-violet-950/30 border border-violet-700/40 rounded-xl px-4 py-3 text-xs">
                 <span className="text-violet-400 text-lg">📱</span>
                 <div className="text-slate-300 space-y-1">
-                  <p className="font-semibold text-violet-300">Using your phone camera?</p>
-                  <p><span className="font-medium text-white">Windows Phone Link:</span> Open Phone Link on Windows → pair your Android → camera appears in the dropdown above automatically.</p>
-                  <p><span className="font-medium text-white">DroidCam (Android/iOS):</span> Install DroidCam on phone + PC → connect via USB or Wi-Fi → appears as a webcam in the list.</p>
-                  <p>No software? Try the <span className="text-violet-300 font-bold">📡 IP CAM</span> tab — just Wi-Fi, no PC install needed!</p>
+                  <p className="font-semibold text-violet-300">Using Phone Camera via Phone Link / DroidCam?</p>
+                  <p>
+                    • If using <span className="font-medium text-white">Phone Link (OPPO K13 5G)</span>: Ensure video is <strong>unpaused</strong> in the Phone Link window.
+                  </p>
+                  <p>
+                    • If Phone Link hangs or stays black, switch the dropdown above to <strong>Default Laptop / Integrated Camera</strong>.
+                  </p>
+                  <p>
+                    • Or use the <span className="text-violet-300 font-bold">📡 IP CAM</span> tab for direct Wi-Fi streaming with zero software lockups!
+                  </p>
                 </div>
               </div>
+
               <div className="relative w-full h-80 md:h-96 rounded-xl overflow-hidden border border-emerald-600/50 bg-slate-950 flex items-center justify-center shadow-inner">
+                {/* ALWAYS MOUNTED VIDEO TAG (avoids null videoRef.current) */}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  onLoadedMetadata={() => setCamReady(true)}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${camReady && !camError ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                />
+
                 {camError ? (
-                  <div className="text-center px-6 space-y-3"><div className="text-4xl">🚫</div><p className="text-sm text-rose-400 font-medium">{camError}</p><button onClick={() => startCamera(selectedDeviceId)} className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">🔄 Retry</button></div>
+                  <div className="relative z-10 text-center px-6 space-y-3">
+                    <div className="text-4xl">🚫</div>
+                    <p className="text-sm text-rose-400 font-medium max-w-md mx-auto">{camError}</p>
+                    <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                      <button
+                        onClick={() => startCamera(selectedDeviceId)}
+                        className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow shadow-emerald-600/30"
+                      >
+                        🔄 Retry Selected
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedDeviceId("");
+                          startCamera("");
+                        }}
+                        className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold transition-all border border-slate-600"
+                      >
+                        💻 Switch to Laptop Camera
+                      </button>
+                    </div>
+                  </div>
                 ) : !camReady ? (
-                  <div className="text-center space-y-2"><div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" /><p className="text-xs text-slate-400">Opening camera… allow browser permission if prompted.</p></div>
+                  <div className="relative z-10 text-center space-y-3 px-4">
+                    <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-xs text-slate-300 font-medium">Opening camera stream…</p>
+                    <p className="text-[11px] text-slate-500">Allow browser permission if prompted. If using Phone Link, ensure camera is active.</p>
+                    <button
+                      onClick={() => {
+                        setSelectedDeviceId("");
+                        startCamera("");
+                      }}
+                      className="mt-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition-all"
+                    >
+                      Taking too long? ➔ Switch to Laptop Camera
+                    </button>
+                  </div>
                 ) : (
                   <>
-                    <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
                     <div className="absolute inset-0 pointer-events-none opacity-10" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.5) 2px,rgba(0,0,0,.5) 4px)" }} />
-                    <div className="absolute top-4 left-4 flex items-center space-x-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-emerald-500/40">
+                    <div className="absolute top-4 left-4 flex items-center space-x-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-emerald-500/40 z-10">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                      <span className="text-xs font-mono font-bold text-emerald-300">{devices.find(d => d.deviceId === selectedDeviceId)?.label || "LIVE CAMERA"}</span>
+                      <span className="text-xs font-mono font-bold text-emerald-300">
+                        {devices.find((d) => d.deviceId === selectedDeviceId)?.label || "LIVE FEED"}
+                      </span>
                     </div>
+
+                    {/* DPDP Act Anonymization Badge in Device Mode */}
+                    {dpdpActive && (
+                      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-950/80 border border-emerald-400/60 px-3 py-1 rounded-full text-[10px] font-mono font-bold text-emerald-300 backdrop-blur-md z-10 shadow-lg flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                        <span>DPDP ACT: EDGE ANONYMIZATION ACTIVE</span>
+                      </div>
+                    )}
+
                     <HUDSpeed />
-                    <SnapBar label="📷 Device Camera — Real Feed" />
+                    <SnapBar label="📷 Device Camera — Real-Time Feed" />
                   </>
                 )}
               </div>
