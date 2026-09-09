@@ -28,8 +28,8 @@ IS_CLOUDINARY_CONFIGURED = bool(
     CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET
 )
 
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".jfif"}
+MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB
 
 if IS_CLOUDINARY_CONFIGURED:
     import cloudinary
@@ -45,7 +45,7 @@ else:
     print(f"[Storage] Using local disk storage in ./{UPLOADS_DIR}")
 
 def validate_image_file(filename: str, file_bytes: bytes, max_bytes: int = MAX_FILE_SIZE_BYTES) -> Tuple[bool, Optional[str]]:
-    """Validate image extension, size, and header bytes"""
+    """Validate image extension, size, and header bytes with PIL and signature inspection"""
     if not filename:
         return False, "Missing filename"
     
@@ -60,12 +60,23 @@ def validate_image_file(filename: str, file_bytes: bytes, max_bytes: int = MAX_F
     if len(file_bytes) < 16:
         return False, "Uploaded file is too small to be a valid image."
 
-    # Verify known image signatures (magic numbers)
+    # First attempt: PIL header verification
+    try:
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(file_bytes))
+        img.verify()
+        return True, None
+    except Exception:
+        pass
+
+    # Fallback: Verify known image signatures (magic numbers)
     is_jpeg = file_bytes.startswith(b'\xff\xd8\xff')
     is_png = file_bytes.startswith(b'\x89PNG\r\n\x1a\n')
     is_webp = len(file_bytes) >= 12 and file_bytes[:4] == b'RIFF' and file_bytes[8:12] == b'WEBP'
+    is_heic = len(file_bytes) >= 12 and file_bytes[4:8] == b'ftyp'
 
-    if not (is_jpeg or is_png or is_webp):
+    if not (is_jpeg or is_png or is_webp or is_heic):
         return False, "Corrupted image file or unrecognized image format signature."
 
     return True, None
@@ -92,6 +103,8 @@ async def save_image(file_bytes: bytes, original_filename: str) -> Dict[str, str
         }
     """
     ext = os.path.splitext(original_filename)[1].lower() or ".jpg"
+    if ext in [".heic", ".heif"]:
+        ext = ".jpg"
     timestamp_name = f"incident_{int(time.time() * 1000)}{ext}"
 
     if IS_CLOUDINARY_CONFIGURED:
@@ -108,6 +121,7 @@ async def save_image(file_bytes: bytes, original_filename: str) -> Dict[str, str
             print(f"[Storage Warning] Cloudinary upload error: {e}. Falling back to local disk.")
 
     # Local disk fallback
+    os.makedirs(UPLOADS_DIR, exist_ok=True)
     local_path = os.path.join(UPLOADS_DIR, timestamp_name)
     with open(local_path, "wb") as f:
         f.write(file_bytes)

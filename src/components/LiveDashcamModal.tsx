@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { api } from "../api";
+import { api, BASE_URL } from "../api";
 
 interface LiveDashcamModalProps {
   isOpen: boolean;
@@ -217,7 +217,7 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
         },
         async () => {
           try {
-            const res = await fetch("http://127.0.0.1:8000/api/geo/current").catch(() => fetch("http://ip-api.com/json"));
+            const res = await fetch(`${BASE_URL}/api/geo/current`).catch(() => fetch("https://ipapi.co/json/"));
             const data = await res.json();
             if (data && (data.lat || data.latitude)) {
               setGps((prev) => ({
@@ -234,7 +234,7 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
         { enableHighAccuracy: true, maximumAge: 3000 }
       );
     } else {
-      fetch("http://127.0.0.1:8000/api/geo/current")
+      fetch(`${BASE_URL}/api/geo/current`)
         .then(r => r.json())
         .then(data => {
           if (data && data.lat) {

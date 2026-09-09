@@ -1,6 +1,6 @@
 // API Client for CityEye Backend
 const RAW_API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
-const BASE_URL = RAW_API_URL.replace(/\/+$/, "");
+export const BASE_URL = RAW_API_URL.replace(/\/+$/, "");
 
 // Auto-derive WebSocket URL (http -> ws, https -> wss)
 const deriveWsUrl = (apiUrl: string): string => {
@@ -9,7 +9,7 @@ const deriveWsUrl = (apiUrl: string): string => {
   const host = apiUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
   return `${wsProto}${host}/ws`;
 };
-const WS_URL = deriveWsUrl(BASE_URL);
+export const WS_URL = deriveWsUrl(BASE_URL);
 
 export interface Incident {
   id: number;
@@ -422,6 +422,66 @@ export function resolveImageUrl(pathOrUrl: string | null | undefined): string | 
   }
   const cleanPath = pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
   return `${BASE_URL}${cleanPath}`;
+}
+
+/**
+ * Automatically resizes and compresses high-resolution photos before upload.
+ * - Downsamples large 12MP-48MP mobile photos to max 1920px width/height.
+ * - Compresses to JPEG 0.85 quality (~400KB - 800KB).
+ * - Converts Apple HEIC/HEIF or uncommon mobile formats to standard JPEG.
+ * - Prevents 413 Payload Too Large / serverless payload limit errors on deployed sites.
+ */
+export async function optimizeImageForUpload(file: File, maxDim = 1920, quality = 0.85): Promise<File> {
+  // If file is already under 1MB and is standard jpeg/png/webp, use directly
+  if (file.size < 1024 * 1024 && ["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return resolve(file);
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return resolve(file);
+            const safeName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+            const optimized = new File([blob], safeName, {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+            resolve(optimized);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
 }
 
 // ─── REST API ──────────────────────────────────────────────────────────────

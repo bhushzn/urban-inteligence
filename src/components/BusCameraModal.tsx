@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Camera, RefreshCw, Radio, MapPin, Zap, CheckCircle, AlertTriangle, Loader2, Copy, Check, Smartphone } from "lucide-react";
-import { api } from "../api";
+import { api, BASE_URL } from "../api";
 
 interface Props {
   isOpen: boolean;
@@ -56,7 +56,7 @@ export default function BusCameraModal({ isOpen, onClose, onIncidentCreated }: P
         },
         async () => {
           try {
-            const res = await fetch("http://127.0.0.1:8000/api/geo/current").catch(() => fetch("http://ip-api.com/json"));
+            const res = await fetch(`${BASE_URL}/api/geo/current`).catch(() => fetch("https://ipapi.co/json/"));
             const data = await res.json();
             if (data && (data.lat || data.latitude)) {
               setGps(prev => ({
@@ -72,7 +72,7 @@ export default function BusCameraModal({ isOpen, onClose, onIncidentCreated }: P
         { enableHighAccuracy: true, maximumAge: 3000 }
       );
     } else {
-      fetch("http://127.0.0.1:8000/api/geo/current")
+      fetch(`${BASE_URL}/api/geo/current`)
         .then(r => r.json())
         .then(data => {
           if (data && data.lat) {

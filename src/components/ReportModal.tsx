@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Upload, Loader2, Camera, MapPin } from "lucide-react";
-import { api } from "../api";
+import { api, BASE_URL, optimizeImageForUpload } from "../api";
 import type { AIResult } from "../api";
 
 interface Props {
@@ -50,7 +50,7 @@ export default function ReportModal({ onClose, onCreated }: Props) {
         },
         async () => {
           try {
-            const res = await fetch("http://127.0.0.1:8000/api/geo/current").catch(() => fetch("http://ip-api.com/json"));
+            const res = await fetch(`${BASE_URL}/api/geo/current`).catch(() => fetch("https://ipapi.co/json/"));
             const data = await res.json();
             if (data && (data.lat || data.latitude)) {
               setLat((data.lat || data.latitude).toFixed(4));
@@ -66,7 +66,7 @@ export default function ReportModal({ onClose, onCreated }: Props) {
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     } else {
-      fetch("http://127.0.0.1:8000/api/geo/current")
+      fetch(`${BASE_URL}/api/geo/current`)
         .then(r => r.json())
         .then(data => {
           if (data && data.lat) {
@@ -87,18 +87,28 @@ export default function ReportModal({ onClose, onCreated }: Props) {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setAiResult(null);
 
-    // Auto-run AI analysis
     setAnalyzing(true);
     try {
-      const result = await api.analyzeImage(file, category);
-      setAiResult(result);
-      setSeverity(result.severity);
+      // Auto-optimize mobile camera images to max 1080p JPEG under 1MB
+      const optimized = await optimizeImageForUpload(file);
+      setImageFile(optimized);
+      setPreviewUrl(URL.createObjectURL(optimized));
+      setAiResult(null);
+
+      // Auto-run AI analysis
+      try {
+        const result = await api.analyzeImage(optimized, category);
+        setAiResult(result);
+        setSeverity(result.severity);
+      } catch (aiErr) {
+        console.warn("AI pre-analysis failed or backend starting:", aiErr);
+      }
       setStep("review");
-    } catch {
+    } catch (err) {
+      console.error("Image optimization error:", err);
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
       setStep("review");
     } finally {
       setAnalyzing(false);
@@ -115,14 +125,34 @@ export default function ReportModal({ onClose, onCreated }: Props) {
       form.append("lat",      lat);
       form.append("lng",      lng);
       form.append("ward",     ward);
-      form.append("location", location || `${ward}, Bhopal`);
+      form.append("location", location || `${ward}, Vidisha`);
       form.append("category", category);
-      if (imageFile) form.append("image", imageFile);
+
+      if (imageFile) {
+        const finalFile = await optimizeImageForUpload(imageFile);
+        form.append("image", finalFile);
+      }
+
       await api.createIncident(form);
       setStep("done");
       setTimeout(() => { onCreated(); onClose(); }, 1500);
     } catch (err: any) {
-      alert(err.message || "Failed to submit. Is the backend running?");
+      const isLocalhostMisconfig =
+        BASE_URL.includes("localhost") &&
+        typeof window !== "undefined" &&
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1";
+
+      if (isLocalhostMisconfig) {
+        alert(
+          `⚠️ Deployed Configuration Notice:\n\nYour website is running at ${window.location.origin}, but it is configured with BASE_URL="${BASE_URL}".\n\nTo fix this in production:\n1. Go to your hosting platform (Vercel / Netlify Settings ➔ Environment Variables)\n2. Add: VITE_API_URL = https://your-backend-api.onrender.com\n3. Trigger a redeploy of your frontend.`
+        );
+      } else {
+        alert(
+          err.message ||
+          "Failed to submit incident. If the backend is running on Render free tier, it may be waking up from sleep. Please wait 30 seconds and retry."
+        );
+      }
     } finally {
       setSubmitting(false);
     }

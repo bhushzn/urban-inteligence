@@ -182,7 +182,14 @@ def run_yolo_inference(image_bytes: bytes, category: str) -> dict:
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         if img is None:
-            raise ValueError("Failed to decode image bytes")
+            # Fallback to PIL for decoding image bytes (handles mobile webp/heic/jfif)
+            try:
+                from PIL import Image
+                import io
+                pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+                img = np.array(pil_img)[:, :, ::-1]  # Convert RGB to BGR for OpenCV
+            except Exception:
+                raise ValueError("Failed to decode image bytes")
             
         height, width, _ = img.shape
         results = yolo_model(img)
