@@ -175,6 +175,98 @@ export interface KarmaProfile {
   available_perks: { id: string; title: string; cost_points: number; status: string }[];
 }
 
+export interface EnvironmentalTelemetry {
+  city: string;
+  aqi: {
+    value: number;
+    category: "Good" | "Moderate" | "Poor" | "Hazardous";
+    pm25: number;
+    pm10: number;
+    co: number;
+    no2: number;
+    trend: string;
+  };
+  temperature: {
+    value: number;
+    unit: string;
+    humidity_pct: number;
+    heat_index: number;
+  };
+  noise: {
+    value: number;
+    unit: string;
+    status: string;
+    peak_zone: string;
+    peak_value: number;
+  };
+  crowd_density: {
+    status: string;
+    avg_bus_load_pct: number;
+    peak_route: string;
+    monitored_stations: number;
+  };
+  traffic_congestion: {
+    status: string;
+    avg_speed_kmh: number;
+    congestion_index: string;
+    active_chokepoints: string[];
+  };
+  bus_lane_enforcement: {
+    status: string;
+    active_obstructions: number;
+    cleared_today: number;
+    compliance_pct: number;
+  };
+  active_fleet_sensors: number;
+  timestamp: string;
+}
+
+export const DEFAULT_TELEMETRY: EnvironmentalTelemetry = {
+  city: "Bhopal Smart City",
+  aqi: {
+    value: 72,
+    category: "Moderate",
+    pm25: 22.4,
+    pm10: 48.1,
+    co: 0.8,
+    no2: 18.5,
+    trend: "stable",
+  },
+  temperature: {
+    value: 31.8,
+    unit: "°C",
+    humidity_pct: 54,
+    heat_index: 33.2,
+  },
+  noise: {
+    value: 67.4,
+    unit: "dB",
+    status: "Normal",
+    peak_zone: "MP Nagar Commercial Zone",
+    peak_value: 78.2,
+  },
+  crowd_density: {
+    status: "Moderate",
+    avg_bus_load_pct: 64,
+    peak_route: "BRTS Line-A (Roshanpura -> New Market)",
+    monitored_stations: 34,
+  },
+  traffic_congestion: {
+    status: "Normal",
+    avg_speed_kmh: 24.5,
+    congestion_index: "1.18x",
+    active_chokepoints: ["Ayodhya Bypass Junction", "Board Office Sq"],
+  },
+  bus_lane_enforcement: {
+    status: "Optimal",
+    active_obstructions: 2,
+    cleared_today: 11,
+    compliance_pct: 94.2,
+  },
+  active_fleet_sensors: 24,
+  timestamp: new Date().toISOString(),
+};
+
 export interface Analytics {
   total: number;
   resolved: number;
@@ -513,6 +605,32 @@ export const api = {
       headers: { ...authHeaders() },
     });
     return handleApiResponse(res, "Failed to fetch citizen karma profile");
+  },
+
+  async getEnvironmentalTelemetry(): Promise<EnvironmentalTelemetry> {
+    try {
+      const res = await fetch(`${BASE_URL}/api/telemetry/environmental`);
+      if (!res.ok) return DEFAULT_TELEMETRY;
+      return res.json();
+    } catch {
+      return DEFAULT_TELEMETRY;
+    }
+  },
+
+  async anonymizeImage(file: File): Promise<{
+    success: boolean;
+    dpdp_compliant: boolean;
+    anonymized_regions: { type: string; x: number; y: number; w: number; h: number }[];
+    image_base64: string;
+  }> {
+    const form = new FormData();
+    form.append("image", file);
+    const res = await fetch(`${BASE_URL}/api/anonymize`, {
+      method: "POST",
+      headers: { ...authHeaders() },
+      body: form,
+    });
+    return handleApiResponse(res, "Anonymization failed");
   },
 };
 

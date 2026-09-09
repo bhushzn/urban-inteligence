@@ -31,6 +31,7 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
   const [hazardDetected, setHazardDetected] = useState<boolean>(true);
   const [anomalyCount, setAnomalyCount] = useState<number>(14);
   const [activeBus, setActiveBus] = useState<string>("Bus #102 (BRTS Line-A)");
+  const [dpdpActive, setDpdpActive] = useState<boolean>(true);
 
   // ── Camera Mode: sim | device | ip ─────────────────────────────────────────
   type CamMode = "sim" | "device" | "ip";
@@ -181,13 +182,29 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
             </div>
           </div>
 
-          {/* Mode Toggle + Close */}
-          <div className="flex items-center space-x-3">
+          {/* Mode Toggle + DPDP Privacy + Close */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* DPDP Act 2023 Compliance Toggle */}
+            <button
+              onClick={() => setDpdpActive(!dpdpActive)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                dpdpActive
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow shadow-emerald-500/20"
+                  : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+              }`}
+              title="Digital Personal Data Protection (DPDP) Act: Auto-blur faces and number plates at the edge"
+            >
+              <span>🛡️ DPDP Guard:</span>
+              <span className={dpdpActive ? "text-emerald-400 font-extrabold" : "text-rose-400"}>
+                {dpdpActive ? "ON" : "OFF"}
+              </span>
+            </button>
+
             {/* 3-way Mode Toggle */}
             <div className="flex items-center bg-slate-800 border border-slate-700 rounded-xl p-1 space-x-1">
-              <button onClick={() => setCameraMode("sim")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${cameraMode === "sim" ? "bg-rose-600 text-white shadow shadow-rose-600/30" : "text-slate-400 hover:text-white"}`}>🎬 SIM</button>
-              <button onClick={() => setCameraMode("device")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${cameraMode === "device" ? "bg-emerald-600 text-white shadow shadow-emerald-600/30" : "text-slate-400 hover:text-white"}`}>📷 DEVICE</button>
-              <button onClick={() => setCameraMode("ip")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${cameraMode === "ip" ? "bg-violet-600 text-white shadow shadow-violet-600/30" : "text-slate-400 hover:text-white"}`}>📡 IP CAM</button>
+              <button onClick={() => setCameraMode("sim")} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${cameraMode === "sim" ? "bg-rose-600 text-white shadow shadow-rose-600/30" : "text-slate-400 hover:text-white"}`}>🎬 SIM</button>
+              <button onClick={() => setCameraMode("device")} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${cameraMode === "device" ? "bg-emerald-600 text-white shadow shadow-emerald-600/30" : "text-slate-400 hover:text-white"}`}>📷 DEVICE</button>
+              <button onClick={() => setCameraMode("ip")} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${cameraMode === "ip" ? "bg-violet-600 text-white shadow shadow-violet-600/30" : "text-slate-400 hover:text-white"}`}>📡 IP CAM</button>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">✕</button>
           </div>
@@ -211,6 +228,7 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
               <div className="relative w-full h-80 md:h-96 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 flex items-center justify-center select-none shadow-inner">
                 <img src="https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=1200&q=80" alt="Live Dashcam Stream" className="absolute inset-0 w-full h-full object-cover opacity-80 filter brightness-95 contrast-110" />
                 <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.5) 2px, rgba(0,0,0,0.5) 4px)" }} />
+                
                 {hazardDetected && (
                   <div className="absolute border-2 border-rose-500 bg-rose-500/15 rounded shadow-[0_0_15px_rgba(244,63,94,0.6)] animate-pulse" style={{ top: "54%", left: "38%", width: "28%", height: "24%" }}>
                     <div className="absolute -top-6 left-0 bg-rose-600 text-white font-mono font-bold text-[11px] px-2 py-0.5 rounded shadow flex items-center space-x-1"><span>⚠️</span><span>POTHOLE: 94.6%</span></div>
@@ -218,6 +236,38 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
                     <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-white" /><div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-white" />
                   </div>
                 )}
+
+                {/* DPDP Act 2023 Face & Plate Anonymization Overlays */}
+                {dpdpActive && (
+                  <>
+                    {/* Oncoming Vehicle License Plate Blur */}
+                    <div
+                      className="absolute border border-emerald-400/80 bg-slate-950/70 backdrop-blur-md rounded flex items-center justify-center shadow-lg"
+                      style={{ top: "72%", left: "58%", width: "13%", height: "5%" }}
+                    >
+                      <span className="text-[8px] sm:text-[9px] font-mono font-bold text-emerald-300 tracking-wide">
+                        [PLATE BLUR]
+                      </span>
+                    </div>
+
+                    {/* Pedestrian Face Anonymization Blur */}
+                    <div
+                      className="absolute border border-emerald-400/80 bg-slate-950/70 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg"
+                      style={{ top: "44%", left: "20%", width: "5%", height: "7%" }}
+                    >
+                      <span className="text-[7px] font-mono font-bold text-emerald-300">
+                        [DPDP]
+                      </span>
+                    </div>
+
+                    {/* DPDP Compliance Badge */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center space-x-1.5 bg-emerald-950/80 backdrop-blur-md border border-emerald-500/40 px-3 py-1 rounded-full text-[10px] font-mono text-emerald-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                      <span>DPDP ACT: EDGE ANONYMIZATION ACTIVE</span>
+                    </div>
+                  </>
+                )}
+
                 <div className="absolute top-4 left-4 font-mono text-xs text-white bg-black/60 backdrop-blur-md px-3 py-2 rounded-lg border border-white/10 space-y-0.5">
                   <div className="text-rose-400 font-bold flex items-center space-x-1.5"><span className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" /><span>{activeBus}</span></div>
                   <div className="text-slate-300 text-[11px]">CAM-01 • SONY STARVIS 1080P</div>
@@ -225,9 +275,16 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
                 </div>
                 <HUDSpeed />
                 <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between font-mono text-xs text-white bg-black/70 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10">
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3 sm:space-x-5">
                     <div><span className="text-slate-400 text-[10px] block">TODAY'S ANOMALIES</span><span className="font-bold text-amber-400">{anomalyCount} Flagged</span></div>
-                    <div><span className="text-slate-400 text-[10px] block">SENSOR STATUS</span><span className="font-bold text-emerald-400">CALIBRATED</span></div>
+                    <div><span className="text-slate-400 text-[10px] block">SENSOR ARRAY</span><span className="font-bold text-emerald-400">ONLINE</span></div>
+                    {/* Live Multi-Sensor Telemetry (PPT Slide 2 & 3) */}
+                    <div className="hidden md:flex items-center space-x-2 text-[10px] border-l border-slate-700 pl-3">
+                      <span>🍃 AQI <strong className="text-emerald-300">72</strong></span>
+                      <span>🌡️ <strong className="text-amber-300">31.8°C</strong></span>
+                      <span>🔊 <strong className="text-purple-300">67 dB</strong></span>
+                      <span>👥 Crowd <strong className="text-blue-300">64%</strong></span>
+                    </div>
                   </div>
                   <button onClick={() => { setAnomalyCount(c => c + 1); onSnapshotReport ? onSnapshotReport() : alert("📸 Incident Snapshot captured!"); }} className="px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md shadow-rose-600/30"><span>📸</span><span>Snapshot Anomaly</span></button>
                 </div>

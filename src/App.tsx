@@ -14,6 +14,7 @@ import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { SafeRouteModal } from "./components/SafeRouteModal";
 import { LiveDashcamModal } from "./components/LiveDashcamModal";
 import { CivicKarmaModal } from "./components/CivicKarmaModal";
+import { EnvironmentalBar } from "./components/EnvironmentalBar";
 import { api, connectWebSocket, getStoredUser, DEFAULT_ANALYTICS } from "./api";
 import type { Incident, Analytics, WSEvent, User, SafeRouteResponse } from "./api";
 import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotificationPermission } from "./utils/audioAlert";
@@ -177,8 +178,11 @@ export default function App() {
         onOpenKarma={() => setShowKarmaModal(true)}
       />
 
+      {/* Multi-Sensor Fleet Telemetry Bar (PPT Slide 2 & 3) */}
+      <EnvironmentalBar />
+
       {/* Main */}
-      <main className="px-4 pb-6 mt-4 relative z-10">
+      <main className="px-4 pb-6 mt-3 relative z-10">
         <div className="flex gap-4" style={{ minHeight: "520px" }}>
           {/* Left — Map + Analytics (70%) */}
           <div className="flex flex-col gap-4" style={{ flex: "0 0 70%" }}>
