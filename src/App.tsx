@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import MapView from "./components/MapView";
 import IncidentFeed from "./components/IncidentFeed";
 import AnalyticsPanel from "./components/AnalyticsPanel";
+import IncidentDetailDrawer from "./components/IncidentDetailDrawer";
 import ReportModal from "./components/ReportModal";
 import LoginModal from "./components/LoginModal";
 import { ProjectShowcaseModal } from "./components/ProjectShowcaseModal";
@@ -18,29 +19,32 @@ import { EnvironmentalBar } from "./components/EnvironmentalBar";
 import { api, connectWebSocket, getStoredUser, DEFAULT_ANALYTICS } from "./api";
 import type { Incident, Analytics, WSEvent, User, SafeRouteResponse } from "./api";
 import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotificationPermission } from "./utils/audioAlert";
+import { CheckCircle2 } from "lucide-react";
 
 export default function App() {
-  const [incidents,      setIncidents]      = useState<Incident[]>([]);
-  const [analytics,      setAnalytics]      = useState<Analytics>(DEFAULT_ANALYTICS);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics>(DEFAULT_ANALYTICS);
   const [activeIncident, setActiveIncident] = useState<Incident | null>(null);
-  const [wsConnected,    setWsConnected]    = useState(false);
-  const [showReport,     setShowReport]     = useState(false);
-  const [showLogin,      setShowLogin]      = useState(false);
-  const [showShowcase,   setShowShowcase]   = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showShowcase, setShowShowcase] = useState(false);
   const [showCitizenPortal, setShowCitizenPortal] = useState(false);
-  const [showPDIModal,   setShowPDIModal]   = useState(false);
+  const [showPDIModal, setShowPDIModal] = useState(false);
   const [showExecReport, setShowExecReport] = useState(false);
   const [showSafeRouteModal, setShowSafeRouteModal] = useState(false);
-  const [showDashcamModal,   setShowDashcamModal]   = useState(false);
-  const [showKarmaModal,     setShowKarmaModal]     = useState(false);
-  const [activeSafeRoute,    setActiveSafeRoute]    = useState<SafeRouteResponse | null>(null);
+  const [showDashcamModal, setShowDashcamModal] = useState(false);
+  const [showKarmaModal, setShowKarmaModal] = useState(false);
+  const [activeSafeRoute, setActiveSafeRoute] = useState<SafeRouteResponse | null>(null);
   const [dispatchIncidentTarget, setDispatchIncidentTarget] = useState<Incident | null>(null);
-  const [verifyIncidentTarget,   setVerifyIncidentTarget]   = useState<Incident | null>(null);
-  const [user,           setUser]           = useState<User | null>(() => getStoredUser());
-  const [soundEnabled,   setSoundEnabled]   = useState(true);
-  const [exportToast,    setExportToast]    = useState(false);
-  const [mapLayers,      setMapLayers]      = useState({ heatmap: false, fleet: true, potholes: true, busLane: true });
-  const [notification,   setNotification]   = useState<string | null>(null);
+  const [verifyIncidentTarget, setVerifyIncidentTarget] = useState<Incident | null>(null);
+  const [inspectIncidentTarget, setInspectIncidentTarget] = useState<Incident | null>(null);
+  const [mobileTab, setMobileTab] = useState<"map" | "feed">("map");
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [exportToast, setExportToast] = useState(false);
+  const [mapLayers, setMapLayers] = useState({ heatmap: false, fleet: true, potholes: true, busLane: true });
+  const [notification, setNotification] = useState<string | null>(null);
 
   const soundRef = useRef(soundEnabled);
   soundRef.current = soundEnabled;
@@ -72,7 +76,7 @@ export default function App() {
       (event: WSEvent) => {
         if (event.event === "new_incident") {
           setIncidents(prev => [event.data, ...prev]);
-          setNotification(`🚨 New: ${event.data.type} in ${event.data.ward}`);
+          setNotification(`🚨 New Anomaly: ${event.data.type} in ${event.data.ward}`);
           setTimeout(() => setNotification(null), 4000);
 
           // Audio chime & browser push
@@ -103,28 +107,39 @@ export default function App() {
   }, []);
 
   const handleVerify = useCallback(async (id: number) => {
-    const updated = await api.verifyIncident(id);
-    setIncidents(prev => prev.map(i => i.id === id ? updated : i));
-    api.getAnalytics().then(setAnalytics).catch(() => {});
+    try {
+      const updated = await api.verifyIncident(id);
+      setIncidents(prev => prev.map(i => i.id === id ? updated : i));
+      api.getAnalytics().then(setAnalytics).catch(() => {});
+      setNotification(`✅ Incident #${id} successfully verified`);
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      alert(err.message || "Failed to verify");
+    }
   }, []);
 
   const handleResolve = useCallback(async (id: number) => {
-    const updated = await api.resolveIncident(id);
-    setIncidents(prev => prev.map(i => i.id === id ? updated : i));
-    api.getAnalytics().then(setAnalytics).catch(() => {});
+    try {
+      const updated = await api.resolveIncident(id);
+      setIncidents(prev => prev.map(i => i.id === id ? updated : i));
+      api.getAnalytics().then(setAnalytics).catch(() => {});
+      setNotification(`✅ Incident #${id} marked as resolved`);
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      alert(err.message || "Failed to resolve");
+    }
   }, []);
 
   const handleExport = useCallback(() => {
-    // Build CSV
     const rows = ["ID,Type,Severity,Ward,Location,Lat,Lng,Verified,Resolved,Timestamp"];
     incidents.forEach(i => {
       rows.push(`${i.id},"${i.type}",${i.severity},"${i.ward}","${i.location}",${i.lat},${i.lng},${i.verified},${i.resolved},"${i.timestamp_label}"`);
     });
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `CityEye_Ward_Report_${new Date().toLocaleDateString("en-IN").replace(/\//g,"-")}.csv`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `CityEye_Vidisha_Audit_${new Date().toLocaleDateString("en-IN").replace(/\//g,"-")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     setExportToast(true);
@@ -136,29 +151,25 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: "radial-gradient(ellipse at 20% 20%, #0d1a2e 0%, #0a0f1e 50%, #050810 100%)" }}>
-      {/* Background glow orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #22d3ee, transparent)" }} />
-        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full opacity-8"
-          style={{ background: "radial-gradient(circle, #fbbf24, transparent)" }} />
-      </div>
-
-      {/* Toasts */}
+    <div className="min-h-screen bg-[#080c14] text-slate-200 flex flex-col antialiased">
+      {/* Toast Notifications */}
       {exportToast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] glass rounded-xl px-5 py-3 border border-cyan-500/40 text-cyan-400 font-semibold text-sm glow-cyan fade-in-up flex items-center gap-2">
-          ✅ Ward Report CSV exported!
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] bg-[#0d1424] border border-sky-500/40 rounded px-4 py-2 text-sky-300 font-semibold text-xs shadow-xl flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-sky-400" />
+          <span>Vidisha Municipal Telemetry CSV successfully exported</span>
         </div>
       )}
       {notification && (
-        <div className="fixed top-20 right-6 z-[998] glass rounded-xl px-4 py-3 border border-red-500/40 text-sm glow-red fade-in-up max-w-xs">
-          <p className="text-white font-semibold">{notification}</p>
-          <p className="text-slate-400 text-xs mt-0.5">New incident added to live feed</p>
+        <div className="fixed top-14 right-4 z-[99998] bg-[#140e14] border border-red-500/40 rounded px-3.5 py-2 text-xs text-red-200 shadow-xl max-w-sm fade-in-up">
+          <p className="font-bold text-white flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span>{notification}</span>
+          </p>
+          <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Vidisha Municipal Telemetry Network</p>
         </div>
       )}
 
-      {/* Navbar */}
+      {/* Enterprise Top Navigation */}
       <Navbar
         onExport={handleExport}
         onReport={() => setShowReport(true)}
@@ -178,29 +189,53 @@ export default function App() {
         onOpenKarma={() => setShowKarmaModal(true)}
       />
 
-      {/* Multi-Sensor Fleet Telemetry Bar (PPT Slide 2 & 3) */}
+      {/* Secondary Status Bar / Telemetry Ribbon */}
       <EnvironmentalBar />
 
-      {/* Main */}
-      <main className="px-4 pb-6 mt-3 relative z-10">
-        <div className="flex gap-4" style={{ minHeight: "520px" }}>
-          {/* Left — Map + Analytics (70%) */}
-          <div className="flex flex-col gap-4" style={{ flex: "0 0 70%" }}>
-            <MapView
-              incidents={incidents}
-              activeIncident={activeIncident}
-              onMarkerClick={handleSelectIncident}
-              mapLayers={mapLayers}
-              onToggleLayer={toggleLayer}
-              activeRoute={activeSafeRoute}
-              onClearRoute={() => setActiveSafeRoute(null)}
-            />
+      {/* Main Command Center Workstation */}
+      <main className="flex-1 px-3 lg:px-6 py-3 flex flex-col">
+        {/* Mobile & Tablet Tab Toggle Bar */}
+        <div className="lg:hidden flex items-center bg-[#0d1424] border border-white/10 rounded p-1 mb-2.5">
+          <button
+            onClick={() => setMobileTab("map")}
+            className={`flex-1 py-1.5 text-xs font-bold rounded transition-colors ${
+              mobileTab === "map" ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            🗺️ GIS Command Map
+          </button>
+          <button
+            onClick={() => setMobileTab("feed")}
+            className={`flex-1 py-1.5 text-xs font-bold rounded transition-colors ${
+              mobileTab === "feed" ? "bg-sky-600 text-white" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            🚨 Incident Queue ({incidents.filter(i => !i.resolved && i.image_url).length})
+          </button>
+        </div>
+
+        {/* Two-Column Operational Split Layout */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-[580px]">
+          {/* Left / Center: Large GIS Map (68%) + Analytics Panel */}
+          <div className={`flex flex-col gap-3 lg:w-[68%] shrink-0 ${mobileTab === "feed" ? "hidden lg:flex" : "flex"}`}>
+            <div className="flex-1 min-h-[480px]">
+              <MapView
+                incidents={incidents}
+                activeIncident={activeIncident}
+                onMarkerClick={handleSelectIncident}
+                mapLayers={mapLayers}
+                onToggleLayer={toggleLayer}
+                activeRoute={activeSafeRoute}
+                onClearRoute={() => setActiveSafeRoute(null)}
+                onInspectIncident={(inc) => setInspectIncidentTarget(inc)}
+              />
+            </div>
             <AnalyticsPanel analytics={analytics} />
           </div>
 
-          {/* Right — Incident Feed (30%) */}
-          <div style={{ flex: "0 0 30%" }} className="flex flex-col">
-            <div className="sticky top-24" style={{ maxHeight: "calc(100vh - 7rem)", display: "flex", flexDirection: "column" }}>
+          {/* Right: Live Incident Feed (32%) */}
+          <div className={`flex flex-col lg:w-[32%] shrink-0 ${mobileTab === "map" ? "hidden lg:flex" : "flex"}`}>
+            <div className="sticky top-16 flex flex-col h-[calc(100vh-6.2rem)] min-h-[540px]">
               <IncidentFeed
                 incidents={incidents}
                 activeId={activeIncident?.id ?? null}
@@ -213,6 +248,7 @@ export default function App() {
                 onResolve={handleResolve}
                 onDispatch={(inc) => setDispatchIncidentTarget(inc)}
                 onVerifyRepair={(inc) => setVerifyIncidentTarget(inc)}
+                onInspect={(inc) => setInspectIncidentTarget(inc)}
                 onOpenLogin={() => setShowLogin(true)}
               />
             </div>
@@ -220,7 +256,21 @@ export default function App() {
         </div>
       </main>
 
-      {/* --- ALL MODALS (Rendered at Root level with z-[9999]) --- */}
+      {/* --- OPERATIONAL DRAWERS & MODALS --- */}
+
+      {/* Incident Detail Drawer (Deep Inspection) */}
+      <IncidentDetailDrawer
+        incident={inspectIncidentTarget}
+        onClose={() => setInspectIncidentTarget(null)}
+        onFocusMap={(inc) => {
+          setActiveIncident(inc);
+          setInspectIncidentTarget(null);
+        }}
+        onVerify={handleVerify}
+        onResolve={handleResolve}
+        onDispatch={(inc) => setDispatchIncidentTarget(inc)}
+        user={user}
+      />
 
       {/* Report Modal */}
       {showReport && (
@@ -238,7 +288,7 @@ export default function App() {
         />
       )}
 
-      {/* Project Showcase / SIH 26124 Modal */}
+      {/* Project Architecture & Showcase Modal */}
       <ProjectShowcaseModal
         isOpen={showShowcase}
         onClose={() => setShowShowcase(false)}
@@ -251,7 +301,7 @@ export default function App() {
         onReportSubmitted={loadAll}
       />
 
-      {/* Corridor PDI Predictive Deterioration Modal */}
+      {/* Corridor PDI Predictive Analytics Modal */}
       <CorridorAnalyticsModal
         isOpen={showPDIModal}
         onClose={() => setShowPDIModal(false)}
@@ -275,7 +325,7 @@ export default function App() {
           onClose={() => setVerifyIncidentTarget(null)}
           onVerificationComplete={(result) => {
             loadAll();
-            setNotification(`✅ Repair Verified: ${result.repair_quality_score}% Compaction Quality!`);
+            setNotification(`✅ Repair Verified: ${result.repair_quality_score}% Quality Score!`);
             setTimeout(() => setNotification(null), 4000);
           }}
         />

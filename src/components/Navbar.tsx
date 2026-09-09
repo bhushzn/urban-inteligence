@@ -1,23 +1,23 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Activity,
-  AlertTriangle,
-  Bus,
-  FileBarChart2,
   Radio,
+  Bus,
+  AlertTriangle,
+  Activity,
   Clock,
-  PlusCircle,
-  LogIn,
-  LogOut,
-  ShieldCheck,
-  HardHat,
-  Sparkles,
-  ChevronDown,
-  LayoutGrid,
+  Plus,
   Video,
   Navigation,
   Megaphone,
-  Award
+  LayoutGrid,
+  ChevronDown,
+  LogIn,
+  LogOut,
+  FileBarChart2,
+  Sparkles,
+  Award,
+  BarChart3,
+  FileText
 } from "lucide-react";
 import type { Analytics, User } from "../api";
 
@@ -71,248 +71,245 @@ export default function Navbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const timeStr = time.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const dateStr = time.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const timeStr = time.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const dateStr = time.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 
   return (
-    <header className="glass glow-cyan sticky top-0 z-40 px-5 py-3 rounded-2xl mx-4 mt-4 transition-all">
-      <div className="flex items-center justify-between gap-3 lg:gap-5">
-        
-        {/* Left: Brand Logo & Title */}
+    <header className="sticky top-0 z-40 bg-[#090d16] border-b border-white/10 px-4 lg:px-6 py-2.5 transition-colors shadow-sm">
+      <div className="flex items-center justify-between gap-4">
+        {/* Left: Brand Identity & Municipal Operations Center */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/30 to-blue-900/60 flex items-center justify-center border border-cyan-500/40 shadow-inner">
-            <Radio className="w-5 h-5 text-cyan-400" />
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-400 blink border-2 border-slate-900" />
+          <div className="w-9 h-9 rounded bg-[#131b2e] border border-sky-500/30 flex items-center justify-center text-sky-400">
+            <Radio className="w-4 h-4 text-sky-400" />
           </div>
+
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-display font-extrabold text-white text-lg leading-none tracking-wide">
+              <span className="font-bold text-white text-base tracking-tight leading-none">
                 CityEye
-              </h1>
-              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 rounded-md">
-                Live
               </span>
+              <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-semibold">
+                v2.4 Pro
+              </span>
+              <div className="flex items-center gap-1.5 ml-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                <span>OPERATIONAL</span>
+              </div>
             </div>
-            <p className="text-slate-400 text-[11px] font-medium mt-0.5 hidden sm:block">
-              Smart City Command Center
+            <p className="text-slate-400 text-[10px] font-medium mt-0.5 tracking-wide hidden sm:block">
+              Vidisha Smart City Command & Control Center (VCCC)
             </p>
           </div>
         </div>
 
-        {/* Center: Live Telemetry Stat Chips (Never Wraps) */}
-        <div className="hidden lg:flex items-center gap-2.5 shrink-0">
-          <StatChip
-            icon={<Bus className="w-3.5 h-3.5 text-cyan-400" />}
-            label="Active Buses"
-            value={analytics ? String(analytics.active_buses) : "14"}
-            color="cyan"
-          />
-          <StatChip
-            icon={<AlertTriangle className="w-3.5 h-3.5 text-amber-400" />}
-            label="Anomalies Today"
-            value={analytics ? String(analytics.total) : "48"}
-            color="amber"
-          />
-          <StatChip
-            icon={<Activity className="w-3.5 h-3.5 text-emerald-400" />}
-            label="Fleet Health"
-            value={analytics ? `${analytics.fleet_health}%` : "96%"}
-            color="green"
-          />
-        </div>
-
-        {/* Right: Quick Actions, Tools Menu, Clock & Auth */}
-        <div className="flex items-center gap-2 shrink-0">
-          
-          {/* Live Digital Clock */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-850/80 border border-slate-700/50 shrink-0">
-            <Clock className="w-3.5 h-3.5 text-cyan-400" />
-            <div className="text-xs">
-              <p className="text-white font-mono font-semibold leading-none tracking-tight">{timeStr}</p>
-              <p className="text-slate-400 text-[10px] leading-none mt-0.5">{dateStr}</p>
+        {/* Center: Real-Time Operational Telemetry Cards */}
+        <div className="hidden xl:flex items-center gap-2">
+          {/* Active Fleet */}
+          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded bg-white/[0.03] border border-white/5">
+            <Bus className="w-4 h-4 text-sky-400 shrink-0" />
+            <div className="text-left leading-none">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block mb-0.5">
+                Active Fleet
+              </span>
+              <span className="font-mono text-xs font-bold text-white">
+                {analytics ? `${analytics.active_buses} Transit Units` : "4 Units (101-404)"}
+              </span>
             </div>
           </div>
 
-          {/* Primary Quick Action: Report Incident */}
+          {/* Today's Anomalies */}
+          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded bg-white/[0.03] border border-white/5">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="text-left leading-none">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block mb-0.5">
+                Active Incidents
+              </span>
+              <span className="font-mono text-xs font-bold text-amber-300">
+                {analytics ? `${analytics.total - analytics.resolved} Open` : "7 Active"}
+              </span>
+            </div>
+          </div>
+
+          {/* Fleet Health Index */}
+          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded bg-white/[0.03] border border-white/5">
+            <Activity className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="text-left leading-none">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block mb-0.5">
+                Corridor Health
+              </span>
+              <span className="font-mono text-xs font-bold text-emerald-400">
+                {analytics ? `${analytics.fleet_health}% PDI` : "96.4% Optimal"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Operational Actions, Clock & Session Profile */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Digital Clock */}
+          <div className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded bg-white/[0.03] border border-white/5 text-right font-mono">
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <div className="leading-tight">
+              <div className="text-xs font-bold text-slate-200">{timeStr} <span className="text-[9px] text-slate-400">IST</span></div>
+              <div className="text-[9px] text-slate-500">{dateStr}</div>
+            </div>
+          </div>
+
+          {/* Primary Action: Report Anomaly */}
           <button
             onClick={onReport}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600/90 to-rose-600/90 hover:from-red-500 hover:to-rose-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-red-900/30 border border-red-400/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-600 hover:bg-red-500 active:bg-red-700 text-white text-xs font-bold transition-colors shadow-sm"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>Report</span>
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Report Anomaly</span>
           </button>
 
-          {/* High-frequency Module: Dashcam Stream */}
+          {/* High Frequency Operational Launcher: Dashcam */}
           <button
             onClick={onOpenDashcam}
-            title="Live Transit Fleet Edge AI Dashcam Stream"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 hover:text-white text-xs sm:text-sm font-semibold transition-all duration-200"
+            title="Live Edge Camera & Dashcam Feed"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-300 hover:text-white text-xs font-medium transition-colors"
           >
-            <Video className="w-4 h-4 text-rose-400" />
-            <span className="hidden xl:inline">Dashcam</span>
+            <Video className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden lg:inline">Dashcam</span>
           </button>
 
-          {/* High-frequency Module: Safe Route Navigation */}
+          {/* High Frequency Operational Launcher: Safe Route Navigation */}
           <button
             onClick={onOpenSafeRoute}
-            title="Safe-Route Hazard-Aware Emergency Navigation"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:text-white text-xs sm:text-sm font-semibold transition-all duration-200"
+            title="Hazard-Aware Emergency Routing Engine"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-300 hover:text-white text-xs font-medium transition-colors"
           >
-            <Navigation className="w-4 h-4 text-blue-400" />
-            <span className="hidden xl:inline">Safe Route</span>
+            <Navigation className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden lg:inline">Safe Route</span>
           </button>
 
-          {/* High-frequency Module: Citizen Portal */}
+          {/* Citizen Portal */}
           <button
             onClick={onOpenCitizenPortal}
-            title="Public Citizen Reporting Portal"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:text-white text-xs sm:text-sm font-semibold transition-all duration-200"
+            title="Public Grievance Portal"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-300 hover:text-white text-xs font-medium transition-colors"
           >
-            <Megaphone className="w-4 h-4 text-emerald-400" />
+            <Megaphone className="w-3.5 h-3.5 text-emerald-400" />
             <span className="hidden xl:inline">Citizen Portal</span>
           </button>
 
-          {/* Command Tools & Analytics Dropdown */}
+          {/* Command Modules Dropdown */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-medium transition-colors ${
                 menuOpen
-                  ? "bg-cyan-500/20 border-cyan-400/60 text-cyan-200 shadow-md shadow-cyan-900/40"
-                  : "bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-200"
+                  ? "bg-sky-500/10 border-sky-500/40 text-sky-300"
+                  : "bg-white/[0.04] hover:bg-white/[0.08] border-white/10 text-slate-300 hover:text-white"
               }`}
             >
-              <LayoutGrid className="w-4 h-4 text-cyan-400" />
-              <span className="hidden sm:inline">Tools & Analytics</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`} />
+              <LayoutGrid className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden md:inline">Modules</span>
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 mb-1">
-                  Command Center Modules
+              <div className="absolute right-0 mt-1.5 w-64 rounded-lg bg-[#0d1424] border border-white/10 shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 mb-1">
+                  Operational Command Tools
                 </div>
 
                 <button
                   onClick={() => { setMenuOpen(false); onOpenPDI?.(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-indigo-500/15 text-left text-xs font-semibold text-slate-200 hover:text-indigo-300 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded hover:bg-white/5 text-left text-xs text-slate-300 hover:text-white transition-colors"
                 >
-                  <span className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">📊</span>
+                  <BarChart3 className="w-4 h-4 text-sky-400 shrink-0" />
                   <div>
-                    <p className="leading-tight">Corridor PDI Analytics</p>
-                    <p className="text-[10px] text-slate-400 font-normal">Pavement Distress & Forecasting</p>
+                    <div className="font-semibold leading-tight">Corridor PDI Analytics</div>
+                    <div className="text-[10px] text-slate-400">Pavement Distress & Forecasting</div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => { setMenuOpen(false); onOpenExecutiveReport?.(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-amber-500/15 text-left text-xs font-semibold text-slate-200 hover:text-amber-300 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded hover:bg-white/5 text-left text-xs text-slate-300 hover:text-white transition-colors"
                 >
-                  <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">📋</span>
+                  <FileText className="w-4 h-4 text-amber-400 shrink-0" />
                   <div>
-                    <p className="leading-tight">Executive Audit Report</p>
-                    <p className="text-[10px] text-slate-400 font-normal">Official BMC SLA Compliance</p>
+                    <div className="font-semibold leading-tight">Executive Audit Report</div>
+                    <div className="text-[10px] text-slate-400">Contractor SLA Compliance</div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => { setMenuOpen(false); onOpenKarma?.(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-emerald-500/15 text-left text-xs font-semibold text-slate-200 hover:text-emerald-300 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded hover:bg-white/5 text-left text-xs text-slate-300 hover:text-white transition-colors"
                 >
-                  <Award className="w-4 h-4 text-emerald-400 shrink-0 ml-1" />
+                  <Award className="w-4 h-4 text-emerald-400 shrink-0" />
                   <div>
-                    <p className="leading-tight">Civic Karma & Rewards</p>
-                    <p className="text-[10px] text-slate-400 font-normal">Citizen Points & Leaderboard</p>
+                    <div className="font-semibold leading-tight">Civic Karma & Rewards</div>
+                    <div className="text-[10px] text-slate-400">Community Leaderboard</div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => { setMenuOpen(false); onExport(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-cyan-500/15 text-left text-xs font-semibold text-slate-200 hover:text-cyan-300 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded hover:bg-white/5 text-left text-xs text-slate-300 hover:text-white transition-colors"
                 >
-                  <FileBarChart2 className="w-4 h-4 text-cyan-400 shrink-0 ml-1" />
+                  <FileBarChart2 className="w-4 h-4 text-cyan-400 shrink-0" />
                   <div>
-                    <p className="leading-tight">Export Telemetry CSV</p>
-                    <p className="text-[10px] text-slate-400 font-normal">Download Incident Raw Dataset</p>
+                    <div className="font-semibold leading-tight">Export Telemetry CSV</div>
+                    <div className="text-[10px] text-slate-400">Municipal Audit Log Download</div>
                   </div>
                 </button>
 
-                <div className="border-t border-slate-800 my-1" />
+                <div className="border-t border-white/5 my-1" />
 
                 <button
                   onClick={() => { setMenuOpen(false); onOpenShowcase?.(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-purple-500/15 text-left text-xs font-semibold text-slate-200 hover:text-purple-300 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded hover:bg-white/5 text-left text-xs text-slate-300 hover:text-white transition-colors"
                 >
-                  <Sparkles className="w-4 h-4 text-purple-400 shrink-0 ml-1" />
+                  <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
                   <div>
-                    <p className="leading-tight">Project Architecture</p>
-                    <p className="text-[10px] text-slate-400 font-normal">AI Pipeline & System Overview</p>
+                    <div className="font-semibold leading-tight">Architecture Specification</div>
+                    <div className="text-[10px] text-slate-400">AI Vision & System Architecture</div>
                   </div>
                 </button>
               </div>
             )}
           </div>
 
-          {/* User Auth Section */}
+          {/* User Profile / Authentication */}
           {user ? (
-            <div className="flex items-center gap-2 pl-1 sm:pl-2 border-l border-slate-700/60">
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/70 shadow-sm">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
-                  user.role === "admin" 
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" 
-                    : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                }`}>
-                  {user.role === "admin" ? <ShieldCheck className="w-4 h-4" /> : <HardHat className="w-4 h-4" />}
-                </div>
-                <div className="text-left hidden md:block">
-                  <p className="text-xs font-semibold text-white leading-tight">{user.name}</p>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                    user.role === "admin" ? "text-cyan-400" : "text-amber-400"
-                  }`}>
-                    {user.role === "admin" ? "Admin" : "Field Agent"}
-                  </span>
-                </div>
+            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+              <div className="text-right leading-tight hidden md:block">
+                <span className="font-semibold text-xs text-white block">{user.name}</span>
+                <span className="text-[10px] font-mono text-sky-400 capitalize">{user.role}</span>
               </div>
               <button
                 onClick={onLogout}
                 title="Sign Out"
-                className="p-2 rounded-xl bg-slate-800/60 hover:bg-red-500/15 border border-slate-700/60 hover:border-red-500/40 text-slate-400 hover:text-red-400 transition-all duration-200"
+                className="w-8 h-8 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-colors"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
             <button
               onClick={onLoginClick}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs sm:text-sm shadow-md shadow-cyan-500/20 transition-all duration-200"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-300 hover:text-white text-xs font-semibold transition-colors"
             >
-              <LogIn className="w-4 h-4" />
+              <LogIn className="w-3.5 h-3.5 text-sky-400" />
               <span>Sign In</span>
             </button>
           )}
-
         </div>
       </div>
     </header>
-  );
-}
-
-function StatChip({ icon, label, value, color }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: "cyan" | "amber" | "green";
-}) {
-  const borderColor = color === "cyan" ? "border-cyan-500/30" : color === "amber" ? "border-amber-500/30" : "border-emerald-500/30";
-  const textColor   = color === "cyan" ? "text-cyan-400"      : color === "amber" ? "text-amber-400"      : "text-emerald-400";
-  const bgColor     = color === "cyan" ? "bg-cyan-500/10"     : color === "amber" ? "bg-amber-500/10"     : "bg-emerald-500/10";
-  return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${bgColor} border ${borderColor} whitespace-nowrap shadow-sm`}>
-      {icon}
-      <div className="text-xs flex items-center gap-1.5">
-        <span className="text-slate-400 font-medium">{label}:</span>
-        <span className={`font-bold font-mono ${textColor}`}>{value}</span>
-      </div>
-    </div>
   );
 }

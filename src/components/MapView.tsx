@@ -4,6 +4,14 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Incident, SafeRouteResponse } from "../api";
 import { resolveImageUrl } from "../api";
+import {
+  Crosshair,
+  Bus,
+  AlertTriangle,
+  Flame,
+  Shield,
+  Navigation
+} from "lucide-react";
 
 // Fix Leaflet default icon issue with Vite
 import iconUrl from "leaflet/dist/images/marker-icon.png";
@@ -11,67 +19,71 @@ import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
 
-// Custom coloured circle markers
-function makeIcon(color: string, size = 16) {
+// High-contrast operational incident marker
+function makeIcon(color: string, size = 16, categoryIcon = "⚠️") {
   return L.divIcon({
     className: "",
     html: `
       <div style="
-        width:${size}px;height:${size}px;
+        width:${size + 6}px;height:${size + 6}px;
         background:${color};
-        border:2px solid rgba(255,255,255,0.85);
+        border:2px solid #ffffff;
         border-radius:50%;
-        box-shadow:0 0 12px ${color}, 0 0 24px ${color}66;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        box-shadow:0 2px 8px rgba(0,0,0,0.6);
         position:relative;
+        cursor:pointer;
       ">
         <div style="
-          position:absolute;inset:-6px;
+          position:absolute;inset:-4px;
           border-radius:50%;
-          border:2px solid ${color}66;
-          animation:ping 1.5s ease-out infinite;
+          border:1.5px solid ${color};
+          opacity:0.8;
+          animation:ping-subtle 2s cubic-bezier(0,0,0.2,1) infinite;
         "></div>
+        <span style="font-size:10px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.8));">${categoryIcon}</span>
       </div>
-      <style>@keyframes ping{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.5);opacity:0}}</style>
     `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconSize: [size + 6, size + 6],
+    iconAnchor: [(size + 6) / 2, (size + 6) / 2],
   });
 }
 
-function makeBusIcon(busNum: string, speed: number) {
+function makeBusIcon(busNum: string, speed: number, _route?: string) {
   return L.divIcon({
     className: "",
     html: `
       <div style="
         display:inline-flex;
         align-items:center;
-        gap:6px;
-        background:rgba(15,23,42,0.95);
-        border:1.5px solid #38bdf8;
-        padding:3px 8px;
-        border-radius:12px;
-        box-shadow:0 0 12px rgba(56,189,248,0.4);
-        color:#fff;
-        font-family:Inter,sans-serif;
+        gap:5px;
+        background:#0a101f;
+        border:1.5px solid #0284c7;
+        padding:2px 7px;
+        border-radius:4px;
+        box-shadow:0 2px 8px rgba(0,0,0,0.7);
+        color:#f8fafc;
+        font-family:ui-monospace,SFMono-Regular,monospace;
         font-size:10px;
         font-weight:700;
         white-space:nowrap;
         transform:translate(-50%, -50%);
       ">
-        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 6px #38bdf8;"></span>
-        <span>🚌 ${busNum}</span>
-        <span style="color:#94a3b8;font-size:9px;">${speed}km/h</span>
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span>
+        <span style="color:#38bdf8;">BUS ${busNum}</span>
+        <span style="color:#94a3b8;font-weight:500;">${speed}km/h</span>
       </div>
     `,
-    iconSize: [84, 24],
-    iconAnchor: [42, 12],
+    iconSize: [95, 22],
+    iconAnchor: [47, 11],
   });
 }
 
 function makeBRTSIcon(label: string, status: "clear" | "warning") {
   const isWarn = status === "warning";
   const bg = isWarn ? "#ef4444" : "#10b981";
-  const icon = isWarn ? "⚠️" : "🚌";
   return L.divIcon({
     className: "",
     html: `
@@ -79,34 +91,40 @@ function makeBRTSIcon(label: string, status: "clear" | "warning") {
         display:inline-flex;
         align-items:center;
         gap:4px;
-        background:rgba(15,23,42,0.92);
-        border:1.5px solid ${bg};
-        border-radius:9999px;
-        padding:2px 8px;
-        box-shadow:0 0 12px ${bg}88;
+        background:#0a0f1c;
+        border:1px solid ${bg};
+        border-radius:4px;
+        padding:2px 6px;
         white-space:nowrap;
         transform:translate(-50%, -50%);
+        box-shadow:0 2px 6px rgba(0,0,0,0.6);
       ">
-        <span style="font-size:10px;">${icon}</span>
-        <span style="color:#f8fafc;font-size:10px;font-weight:700;font-family:Inter,sans-serif;">${label}</span>
+        <span style="font-size:9px;">${isWarn ? "⚠️" : "🚌"}</span>
+        <span style="color:#f8fafc;font-size:10px;font-weight:600;font-family:sans-serif;">${label}</span>
       </div>
     `,
-    iconSize: [110, 24],
-    iconAnchor: [55, 12],
+    iconSize: [110, 22],
+    iconAnchor: [55, 11],
   });
 }
 
-const ICONS = {
-  High:   makeIcon("#ef4444", 18),
-  Medium: makeIcon("#fbbf24", 16),
-  Low:    makeIcon("#22d3ee", 14),
-};
+function getCategoryIcon(cat: string): string {
+  switch (cat) {
+    case "road": return "⚠️";
+    case "bus_lane": return "🚌";
+    case "garbage": return "🗑️";
+    case "water": return "💧";
+    case "infrastructure": return "💡";
+    case "animal": return "🐄";
+    default: return "📍";
+  }
+}
 
 function PanTo({ incident }: { incident: Incident | null }) {
   const map = useMap();
   useEffect(() => {
     if (incident) {
-      map.flyTo([incident.lat, incident.lng], 16, { duration: 1.5 });
+      map.flyTo([incident.lat, incident.lng], 16, { duration: 1.2 });
     }
   }, [incident, map]);
   return null;
@@ -116,7 +134,7 @@ function MapController({ flyTarget }: { flyTarget: [number, number] | null }) {
   const map = useMap();
   useEffect(() => {
     if (flyTarget) {
-      map.flyTo(flyTarget, 15, { duration: 1.2 });
+      map.flyTo(flyTarget, 15, { duration: 1.0 });
     }
   }, [flyTarget, map]);
   return null;
@@ -130,6 +148,7 @@ interface Props {
   onToggleLayer: (layer: "heatmap" | "fleet" | "potholes" | "busLane") => void;
   activeRoute?: SafeRouteResponse | null;
   onClearRoute?: () => void;
+  onInspectIncident?: (inc: Incident) => void;
 }
 
 // Vidisha city centre (Madhav Ganj / Station Road / Neemtal)
@@ -209,6 +228,7 @@ export default function MapView({
   onToggleLayer,
   activeRoute,
   onClearRoute,
+  onInspectIncident,
 }: Props) {
   const mapRef = useRef<L.Map | null>(null);
   const [mapStyle, setMapStyle] = useState<"google-streets" | "google-hybrid" | "dark">("google-streets");
@@ -225,7 +245,6 @@ export default function MapView({
         let deltaLat = bus.deltaLat;
         let deltaLng = bus.deltaLng;
 
-        // Bounce back if moved too far from Vidisha center
         if (Math.abs(newLat - VIDISHA_CENTER[0]) > 0.025) deltaLat = -deltaLat;
         if (Math.abs(newLng - VIDISHA_CENTER[1]) > 0.025) deltaLng = -deltaLng;
 
@@ -246,95 +265,82 @@ export default function MapView({
 
   const visibleIncidents = incidents.filter((inc) => {
     if (!mapLayers.potholes && inc.category === "road") return false;
-    // Don't show incidents without real images
     if (!inc.image_url) return false;
     return true;
   });
 
   return (
-    <div className="glass glow-cyan rounded-2xl overflow-hidden relative flex flex-col" style={{ minHeight: "480px" }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/40 z-10 relative bg-slate-900/60">
+    <div className="cmd-surface rounded-lg overflow-hidden flex flex-col h-full min-h-[540px] border border-white/10 shadow-sm relative">
+      {/* Top GIS Operations Toolbar */}
+      <div className="bg-[#0b101c] border-b border-white/10 px-3.5 py-2 flex flex-wrap items-center justify-between gap-2.5 z-10">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-cyan-400 blink" />
-          <span className="text-sm font-semibold text-slate-200 font-display">GIS Command Map</span>
-          <span className="text-xs text-slate-400 ml-1 font-medium">— Vidisha, Madhya Pradesh • LIVE</span>
+          <div className="w-2 h-2 rounded-full bg-sky-400" />
+          <span className="font-semibold text-xs text-white uppercase tracking-wider">
+            GIS Command Map
+          </span>
+          <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
+            • Vidisha, MP [23.5230° N, 77.8120° E]
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Quick Vidisha Landmarks Focus */}
-          <div className="hidden sm:flex items-center gap-1 bg-slate-800/40 border border-slate-700/40 px-2 py-1 rounded-lg text-[11px]">
-            <span className="text-slate-500 font-semibold mr-1">Focus:</span>
-            {[
-              { name: "Madhav Ganj", coords: [23.5240, 77.8115] as [number, number] },
-              { name: "Station Rd", coords: [23.5226, 77.8148] as [number, number] },
-              { name: "Neemtal", coords: [23.5190, 77.8064] as [number, number] },
-              { name: "Durga Nagar", coords: [23.5170, 77.8171] as [number, number] },
-              { name: "Sanchi Rd", coords: [23.5050, 77.7750] as [number, number] },
-            ].map(w => (
-              <button
-                key={w.name}
-                onClick={() => setFlyTarget(w.coords)}
-                className="px-1.5 py-0.5 rounded text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
-              >
-                {w.name}
-              </button>
-            ))}
-          </div>
 
-          {/* Map Layer Switcher: Google Map vs Satellite vs Dark */}
-          <div className="flex items-center gap-1 bg-slate-800/70 p-0.5 rounded-lg border border-slate-700/60 text-[11px]">
-            <button
-              onClick={() => setMapStyle("google-streets")}
-              title="Actual Google Maps Streets view"
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold transition-all ${
-                mapStyle === "google-streets" ? "bg-cyan-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <span>🗺️</span>
-              <span>Google Map</span>
-            </button>
-            <button
-              onClick={() => setMapStyle("google-hybrid")}
-              title="Google Maps Satellite Hybrid view"
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold transition-all ${
-                mapStyle === "google-hybrid" ? "bg-cyan-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <span>🛰️</span>
-              <span>Satellite</span>
-            </button>
-            <button
-              onClick={() => setMapStyle("dark")}
-              title="Tactical Dark GIS Canvas"
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold transition-all ${
-                mapStyle === "dark" ? "bg-cyan-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <span>🌙</span>
-              <span>Dark</span>
-            </button>
-          </div>
-
-          {/* Legend */}
+        {/* Quick Vidisha Landmarks Focus */}
+        <div className="hidden md:flex items-center gap-1 bg-white/[0.03] border border-white/5 px-2 py-0.5 rounded text-[11px]">
+          <span className="text-slate-500 font-semibold mr-1 uppercase text-[10px]">Jump To:</span>
           {[
-            { label: "High", color: "#ef4444" },
-            { label: "Medium", color: "#fbbf24" },
-            { label: "Low", color: "#22d3ee" },
-          ].map((l) => (
-            <div key={l.label} className="flex items-center gap-1 text-xs text-slate-400 ml-1">
-              <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
-              {l.label}
-            </div>
+            { name: "Madhav Ganj", coords: [23.5240, 77.8115] as [number, number] },
+            { name: "Station Rd", coords: [23.5226, 77.8148] as [number, number] },
+            { name: "Neemtal", coords: [23.5190, 77.8064] as [number, number] },
+            { name: "Durga Nagar", coords: [23.5170, 77.8171] as [number, number] },
+            { name: "Sanchi Rd", coords: [23.5050, 77.7750] as [number, number] },
+          ].map(w => (
+            <button
+              key={w.name}
+              onClick={() => setFlyTarget(w.coords)}
+              className="px-1.5 py-0.5 rounded text-slate-400 hover:text-sky-300 hover:bg-white/5 transition-colors font-medium"
+            >
+              {w.name}
+            </button>
           ))}
+        </div>
+
+        {/* Map Tile Mode Selector */}
+        <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded border border-white/10 text-[11px]">
+          <button
+            onClick={() => setMapStyle("google-streets")}
+            title="Google Maps Streets"
+            className={`px-2 py-0.5 rounded font-medium transition-colors ${
+              mapStyle === "google-streets" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Roadmap
+          </button>
+          <button
+            onClick={() => setMapStyle("google-hybrid")}
+            title="Google Maps Satellite Hybrid"
+            className={`px-2 py-0.5 rounded font-medium transition-colors ${
+              mapStyle === "google-hybrid" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Satellite
+          </button>
+          <button
+            onClick={() => setMapStyle("dark")}
+            title="Dark Tactical Canvas"
+            className={`px-2 py-0.5 rounded font-medium transition-colors ${
+              mapStyle === "dark" ? "bg-sky-600 text-white font-semibold" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Dark
+          </button>
         </div>
       </div>
 
       {/* Map Canvas */}
-      <div className="relative flex-1" style={{ minHeight: "400px" }}>
+      <div className="relative flex-1 w-full h-full min-h-[460px]">
         <MapContainer
           center={VIDISHA_CENTER}
           zoom={14}
-          style={{ height: "100%", width: "100%", background: mapStyle.startsWith("google") ? "#e5e3df" : "#0a0f1e" }}
+          style={{ height: "100%", width: "100%", background: mapStyle.startsWith("google") ? "#e5e3df" : "#080c14" }}
           ref={mapRef as React.RefObject<L.Map>}
           zoomControl={true}
         >
@@ -353,14 +359,14 @@ export default function MapView({
             }
             subdomains={mapStyle.startsWith("google") ? ["mt0", "mt1", "mt2", "mt3"] : ["a", "b", "c"]}
             maxZoom={20}
-            attribution={mapStyle.startsWith("google") ? '&copy; Google Maps' : '&copy; Esri &copy; OpenStreetMap'}
+            attribution={mapStyle.startsWith("google") ? '&copy; Google Maps' : '&copy; OpenStreetMap'}
           />
 
           {/* Programmatic Navigation */}
           <PanTo incident={activeIncident} />
           <MapController flyTarget={flyTarget} />
 
-          {/* Dynamic Risk Density Heatmap Circles Layer */}
+          {/* Dynamic Risk Density Heatmap Layer */}
           {mapLayers.heatmap && visibleIncidents.map((inc) => {
             if (inc.resolved) return null;
             const isHigh = inc.severity === "High";
@@ -368,11 +374,11 @@ export default function MapView({
               <Circle
                 key={`heat-${inc.id}`}
                 center={[inc.lat, inc.lng]}
-                radius={isHigh ? 450 : 320}
+                radius={isHigh ? 420 : 280}
                 pathOptions={{
                   color: isHigh ? "#ef4444" : "#f59e0b",
                   fillColor: isHigh ? "#ef4444" : "#f59e0b",
-                  fillOpacity: isHigh ? 0.32 : 0.22,
+                  fillOpacity: isHigh ? 0.28 : 0.18,
                   weight: 1,
                 }}
               />
@@ -384,64 +390,90 @@ export default function MapView({
             <Marker
               key={bus.id}
               position={[bus.lat, bus.lng]}
-              icon={makeBusIcon(bus.number, bus.speed)}
+              icon={makeBusIcon(bus.number, bus.speed, bus.route)}
             >
-              <Popup className="urban-popup">
+              <Popup className="cmd-popup">
                 <div style={{ fontFamily: "Inter, sans-serif", minWidth: "190px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                    <span style={{ fontWeight: 700, color: "#38bdf8", fontSize: "13px" }}>Bus #{bus.number}</span>
-                    <span style={{ background: "rgba(34,197,94,0.2)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "10px", fontWeight: 600 }}>
-                      CAM ACTIVE
+                    <span style={{ fontWeight: 700, color: "#38bdf8", fontSize: "12px", fontFamily: "monospace" }}>BUS #{bus.number}</span>
+                    <span style={{ background: "rgba(16,185,129,0.15)", color: "#34d399", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "3px", padding: "1px 4px", fontSize: "9px", fontWeight: 700 }}>
+                      TELEMETRY SYNC
                     </span>
                   </div>
-                  <p style={{ color: "#e2e8f0", fontSize: "12px", margin: "2px 0", fontWeight: 600 }}>{bus.route}</p>
-                  <p style={{ color: "#94a3b8", fontSize: "11px", margin: "2px 0" }}>⚡ Telemetry: {bus.speed} km/h • GPS Active</p>
-                  <p style={{ color: "#94a3b8", fontSize: "11px", margin: "2px 0" }}>🎥 Feed: 1080p @ 30fps • Edge AI Active</p>
-                  <p style={{ color: "#64748b", fontSize: "10px", marginTop: "4px" }}>Patrol Rover • Bhopal Municipal Transit</p>
+                  <p style={{ color: "#f1f5f9", fontSize: "11px", margin: "2px 0", fontWeight: 600 }}>{bus.route}</p>
+                  <p style={{ color: "#94a3b8", fontSize: "11px", margin: "2px 0", fontFamily: "monospace" }}>Speed: {bus.speed} km/h • GPS Active</p>
+                  <p style={{ color: "#64748b", fontSize: "10px", marginTop: "4px" }}>Vidisha Municipal Transit Unit</p>
                 </div>
               </Popup>
             </Marker>
           ))}
 
           {/* Incident markers */}
-          {visibleIncidents.map((inc) => (
-            <Marker
-              key={inc.id}
-              position={[inc.lat, inc.lng]}
-              icon={ICONS[inc.severity] ?? ICONS.Low}
-              eventHandlers={{ click: () => onMarkerClick(inc) }}
-            >
-              <Popup className="urban-popup">
-                <div style={{ fontFamily: "Inter, sans-serif", minWidth: "200px" }}>
-                  <p style={{ fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>{inc.type}</p>
-                  <p style={{ color: "#94a3b8", fontSize: "12px", margin: "2px 0" }}>📍 {inc.location} — {inc.ward}</p>
-                  <p style={{ color: "#94a3b8", fontSize: "12px", margin: "2px 0" }}>
-                    Severity:{" "}
-                    <span style={{ color: inc.severity === "High" ? "#ef4444" : inc.severity === "Medium" ? "#fbbf24" : "#22d3ee", fontWeight: 600 }}>
-                      {inc.severity}
-                    </span>
-                  </p>
-                  {inc.confidence > 0 && (
-                    <p style={{ color: "#94a3b8", fontSize: "12px", margin: "2px 0" }}>
-                      AI Confidence: <span style={{ color: "#22d3ee", fontWeight: 600 }}>{Math.round(inc.confidence * 100)}%</span>
+          {visibleIncidents.map((inc) => {
+            const color = inc.severity === "High" ? "#ef4444" : inc.severity === "Medium" ? "#f59e0b" : "#38bdf8";
+            const iconSymbol = getCategoryIcon(inc.category);
+            return (
+              <Marker
+                key={inc.id}
+                position={[inc.lat, inc.lng]}
+                icon={makeIcon(color, 16, iconSymbol)}
+                eventHandlers={{ click: () => onMarkerClick(inc) }}
+              >
+                <Popup className="cmd-popup">
+                  <div style={{ fontFamily: "Inter, sans-serif", minWidth: "210px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <span style={{ fontWeight: 700, color: "#fff", fontSize: "12px" }}>{inc.type}</span>
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        padding: "1px 5px",
+                        borderRadius: "3px",
+                        background: inc.severity === "High" ? "rgba(239,68,68,0.2)" : inc.severity === "Medium" ? "rgba(245,158,11,0.2)" : "rgba(14,165,233,0.2)",
+                        color: inc.severity === "High" ? "#f87171" : inc.severity === "Medium" ? "#fbbf24" : "#38bdf8"
+                      }}>
+                        {inc.severity}
+                      </span>
+                    </div>
+
+                    <p style={{ color: "#94a3b8", fontSize: "11px", margin: "2px 0" }}>📍 {inc.location} ({inc.ward})</p>
+                    <p style={{ color: "#64748b", fontSize: "10px", margin: "2px 0", fontFamily: "monospace" }}>
+                      {inc.lat.toFixed(4)}° N, {inc.lng.toFixed(4)}° E • {inc.timestamp_label}
                     </p>
-                  )}
-                  {inc.dispatched_to && (
-                    <div style={{ marginTop: "4px", padding: "4px 6px", background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.3)", borderRadius: "6px" }}>
-                      <p style={{ color: "#38bdf8", fontSize: "11px", fontWeight: 600, margin: 0 }}>👷 Dispatched: {inc.dispatched_to}</p>
-                      {inc.sla_deadline && <p style={{ color: "#94a3b8", fontSize: "10px", margin: 0 }}>⏳ SLA: {inc.sla_deadline}</p>}
-                    </div>
-                  )}
-                  {inc.image_url && (
-                    <div style={{ marginTop: "6px", maxHeight: "100px", overflow: "hidden", borderRadius: "6px", border: "1px solid #334155" }}>
-                      <img src={resolveImageUrl(inc.image_url) || ""} alt="Evidence" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    </div>
-                  )}
-                  <p style={{ color: "#64748b", fontSize: "11px", marginTop: "4px" }}>{inc.timestamp_label}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+
+                    {inc.image_url && (
+                      <div style={{ marginTop: "6px", height: "90px", overflow: "hidden", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <img src={resolveImageUrl(inc.image_url) || ""} alt="Evidence" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    )}
+
+                    {onInspectIncident && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onInspectIncident(inc);
+                        }}
+                        style={{
+                          width: "100%",
+                          marginTop: "8px",
+                          padding: "4px 8px",
+                          background: "#0284c7",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "4px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          cursor: "pointer"
+                        }}
+                      >
+                        Inspect Anomaly Details
+                      </button>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
           {/* Safe Route Polylines */}
           {activeRoute && (
             <>
@@ -449,7 +481,7 @@ export default function MapView({
                 positions={activeRoute.safest_route.waypoints}
                 pathOptions={{
                   color: "#10b981",
-                  weight: 6,
+                  weight: 5,
                   opacity: 0.9,
                   lineCap: "round",
                   lineJoin: "round",
@@ -459,15 +491,15 @@ export default function MapView({
                 positions={activeRoute.fastest_route.waypoints}
                 pathOptions={{
                   color: "#f43f5e",
-                  weight: 4,
+                  weight: 3.5,
                   dashArray: "6, 8",
-                  opacity: 0.65,
+                  opacity: 0.7,
                 }}
               />
             </>
           )}
 
-          {/* BRTS Dedicated Bus Corridors & Enforcements */}
+          {/* BRTS Dedicated Bus Corridors */}
           {mapLayers.busLane && (
             <>
               {BRTS_CORRIDORS.map((corridor, idx) => (
@@ -475,9 +507,9 @@ export default function MapView({
                   key={`brts-outer-${idx}`}
                   positions={corridor}
                   pathOptions={{
-                    color: "#f472b6",
-                    weight: 10,
-                    opacity: 0.25,
+                    color: "#0284c7",
+                    weight: 8,
+                    opacity: 0.2,
                   }}
                 />
               ))}
@@ -486,28 +518,25 @@ export default function MapView({
                   key={`brts-inner-${idx}`}
                   positions={corridor}
                   pathOptions={{
-                    color: "#ec4899",
-                    weight: 4,
+                    color: "#38bdf8",
+                    weight: 3,
                     dashArray: "6, 8",
-                    opacity: 0.9,
+                    opacity: 0.85,
                   }}
                 />
               ))}
               {BRTS_CHECKPOINTS.map((cp) => (
                 <Marker key={cp.id} position={cp.coords} icon={makeBRTSIcon(cp.name, cp.status)}>
                   <Popup>
-                    <div style={{ minWidth: "190px", fontFamily: "Inter, sans-serif" }}>
+                    <div style={{ minWidth: "180px", fontFamily: "Inter, sans-serif" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                        <span style={{ fontSize: "14px" }}>{cp.status === "warning" ? "⚠️" : "🚌"}</span>
+                        <span style={{ fontSize: "13px" }}>{cp.status === "warning" ? "⚠️" : "🚌"}</span>
                         <h4 style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "12px", margin: 0 }}>{cp.name}</h4>
                       </div>
-                      <div style={{ padding: "4px 8px", background: cp.status === "warning" ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)", border: `1px solid ${cp.status === "warning" ? "rgba(239,68,68,0.4)" : "rgba(16,185,129,0.4)"}`, borderRadius: "6px", margin: "6px 0" }}>
-                        <p style={{ color: cp.status === "warning" ? "#f87171" : "#34d399", fontSize: "11px", fontWeight: 600, margin: 0 }}>
-                          {cp.compliance}
-                        </p>
-                        <p style={{ color: "#94a3b8", fontSize: "10px", margin: "2px 0 0 0" }}>{cp.desc}</p>
-                      </div>
-                      <p style={{ color: "#64748b", fontSize: "9px", margin: 0 }}>Enforced via CityEye Edge-YOLO Transit Feed</p>
+                      <p style={{ color: cp.status === "warning" ? "#f87171" : "#34d399", fontSize: "11px", fontWeight: 600, margin: "2px 0" }}>
+                        {cp.compliance}
+                      </p>
+                      <p style={{ color: "#94a3b8", fontSize: "10px", margin: "2px 0" }}>{cp.desc}</p>
                     </div>
                   </Popup>
                 </Marker>
@@ -516,76 +545,78 @@ export default function MapView({
           )}
         </MapContainer>
 
-        {/* Map Controls overlay */}
-        <div className="absolute bottom-4 left-4 z-[1000] glass-lighter rounded-xl p-3 flex flex-col gap-2">
-          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">Map Layers</p>
+        {/* Top-Left Floating Tactical Telemetry Card */}
+        <div className="absolute top-3 left-3 z-[1000] bg-[#090e1c]/90 backdrop-blur-sm border border-white/10 rounded px-3 py-2 text-xs flex items-center gap-3.5 shadow-md">
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400 text-[11px] uppercase font-semibold">Plotted:</span>
+            <span className="font-mono font-bold text-white">{visibleIncidents.length}</span>
+          </div>
+          <span className="text-white/10">|</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-red-400 text-[11px] uppercase font-semibold">Critical:</span>
+            <span className="font-mono font-bold text-red-400">
+              {visibleIncidents.filter(i => i.severity === "High" && !i.resolved).length}
+            </span>
+          </div>
+          <span className="text-white/10">|</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-emerald-400 text-[11px] uppercase font-semibold">Resolved:</span>
+            <span className="font-mono font-bold text-emerald-400">
+              {visibleIncidents.filter(i => i.resolved).length}
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom-Left Layer Toggles Toolbar */}
+        <div className="absolute bottom-3 left-3 z-[1000] bg-[#090e1c]/90 backdrop-blur-sm border border-white/10 rounded p-1.5 flex items-center gap-1 shadow-md">
           {[
-            { key: "potholes" as const, label: "Show Incidents", color: "red" },
-            { key: "fleet"    as const, label: "Track Fleet",    color: "cyan" },
-            { key: "busLane"  as const, label: "BRTS Bus Lanes", color: "pink" },
-            { key: "heatmap"  as const, label: "Heatmap",        color: "amber" },
-          ].map(({ key, label, color }) => (
+            { key: "potholes" as const, label: "Incidents", icon: <AlertTriangle className="w-3 h-3 text-red-400" /> },
+            { key: "fleet" as const, label: "Fleet", icon: <Bus className="w-3 h-3 text-sky-400" /> },
+            { key: "busLane" as const, label: "Transit Lanes", icon: <Shield className="w-3 h-3 text-cyan-400" /> },
+            { key: "heatmap" as const, label: "Heatmap", icon: <Flame className="w-3 h-3 text-amber-400" /> },
+          ].map(({ key, label, icon }) => (
             <button
               key={key}
               onClick={() => onToggleLayer(key)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
                 mapLayers[key]
-                  ? color === "red"   ? "bg-red-500/20 border-red-500/40 text-red-400"
-                  : color === "cyan"  ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400"
-                  : color === "pink"  ? "bg-pink-500/20 border-pink-500/40 text-pink-400"
-                                      : "bg-amber-500/20 border-amber-500/40 text-amber-400"
-                  : "bg-slate-800/40 border-slate-700/40 text-slate-400"
+                  ? "bg-white/10 text-white border border-white/15"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent"
               }`}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${mapLayers[key] ? "bg-current" : "bg-slate-600"}`} />
-              {label}
+              {icon}
+              <span>{label}</span>
             </button>
           ))}
         </div>
 
-        {/* Active Route Floating Banner */}
+        {/* Safe Route Notification Overlay */}
         {activeRoute && (
-          <div className="absolute top-14 left-4 z-[1000] glass-lighter rounded-xl px-4 py-2 flex items-center gap-3 border border-emerald-500/40 fade-in-up">
+          <div className="absolute top-12 left-3 z-[1000] bg-[#090e1c]/95 border border-emerald-500/40 rounded px-3 py-2 flex items-center gap-3 shadow-lg">
             <div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-white">
-                <span className="text-emerald-400">🛡️ Safe Route Active:</span>
-                <span>{activeRoute.origin} ➔ {activeRoute.destination}</span>
+              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Safe Corridor Active: {activeRoute.origin} ➔ {activeRoute.destination}</span>
               </div>
-              <p className="text-[10px] text-emerald-300">
-                {activeRoute.safest_route.smoothness_score}% Smoothness • Bypasses All Severe Hazards
+              <p className="text-[11px] text-emerald-300 font-mono">
+                {activeRoute.safest_route.smoothness_score}% Pavement Smoothness • 0 Critical Hazards Encountered
               </p>
             </div>
             {onClearRoute && (
               <button
                 onClick={onClearRoute}
-                className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-semibold text-slate-300 transition-colors"
+                className="px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-slate-300 text-[10px] font-semibold"
               >
-                Clear Route
+                Dismiss
               </button>
             )}
           </div>
         )}
 
-        {/* Active incident info */}
-        {activeIncident && (
-          <div className="absolute top-4 right-4 z-[1000] glass-lighter rounded-xl px-3 py-2 fade-in-up">
-            <p className="text-xs text-cyan-400 font-semibold">📍 Viewing: {activeIncident.type}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{activeIncident.lat.toFixed(4)}, {activeIncident.lng.toFixed(4)}</p>
-          </div>
-        )}
-
-        {/* Stats bar */}
-        <div className="absolute top-4 left-4 z-[1000] glass-lighter rounded-xl px-3 py-1.5 flex items-center gap-4">
-          {[
-            { label: "Total", val: incidents.length, color: "text-slate-300" },
-            { label: "High", val: incidents.filter(i => i.severity === "High" && !i.resolved).length, color: "text-red-400" },
-            { label: "Resolved", val: incidents.filter(i => i.resolved).length, color: "text-emerald-400" },
-          ].map(s => (
-            <div key={s.label} className="text-xs">
-              <span className="text-slate-500">{s.label}: </span>
-              <span className={`font-bold ${s.color}`}>{s.val}</span>
-            </div>
-          ))}
+        {/* Bottom-Right Coordinates HUD */}
+        <div className="absolute bottom-3 right-3 z-[1000] bg-[#090e1c]/90 backdrop-blur-sm border border-white/10 rounded px-2.5 py-1 text-[10px] font-mono text-slate-400 shadow-md flex items-center gap-2">
+          <Crosshair className="w-3 h-3 text-sky-400" />
+          <span>VIDISHA GRID • 23.5230° N, 77.8120° E • WGS84</span>
         </div>
       </div>
     </div>
