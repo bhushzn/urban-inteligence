@@ -277,39 +277,6 @@ AUTO_INCIDENTS = [
     ("Waterlogging", "High", 23.8155, 77.7895, "Ward 4", "Misrod Area"),
     ("Broken Streetlight", "Low", 23.8478, 77.7755, "Ward 14", "Bairagarh"),
     ("Encroachment", "Medium", 23.8330, 77.7680, "Ward 8", "Hoshangabad Road"),
-]
-
-async def auto_incident_generator():
-    """Simulates new field incidents appearing periodically"""
-    await asyncio.sleep(25)
-    while True:
-        try:
-            t, s, lat, lng, ward, loc = random.choice(AUTO_INCIDENTS)
-            cat = "road" if "Pothole" in t else "garbage" if "Garbage" in t else "water" if "Water" in t else "infrastructure"
-            
-            inc_id = await database.execute_insert("""
-                INSERT INTO incidents
-                    (type, severity, lat, lng, ward, location, verified, category,
-                     confidence, bbox_x, bbox_y, bbox_w, bbox_h, timestamp_label)
-                VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 'Just now')
-            """, (
-                t, s, lat, lng, ward, loc, cat,
-                round(random.uniform(0.72, 0.97), 2),
-                round(random.uniform(15, 28), 1),
-                round(random.uniform(15, 28), 1),
-                round(random.uniform(45, 65), 1),
-                round(random.uniform(35, 52), 1)
-            ), id_column="id")
-            
-            row = await database.fetch_one("SELECT * FROM incidents WHERE id=?", (inc_id,))
-            if row:
-                inc_dict = incident_row_to_dict(row)
-                await manager.broadcast({"event": "new_incident", "data": inc_dict})
-        except Exception as e:
-            print(f"⚠️ Auto generator background error: {e}")
-            
-        await asyncio.sleep(random.randint(30, 50))
-
 # ─── Lifecycle Events ───────────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup():
@@ -327,8 +294,8 @@ async def startup():
         print(f"[AI Model Warning] Could not load YOLOv8 model: {e}. Active heuristic fallback enabled.")
         yolo_model = None
 
-    # Start live telemetry generator
-    asyncio.create_task(auto_incident_generator())
+    # Automatic background fake incident generation is disabled so incidents ONLY appear
+    # when captured and uploaded from the Dashcam or reported by citizens.
 
 @app.on_event("shutdown")
 async def shutdown():
