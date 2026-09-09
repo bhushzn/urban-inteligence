@@ -156,6 +156,7 @@ ANOMALY_CLASSES = {
     "water":         [("Waterlogging", "Medium"), ("Drain Overflow", "High"), ("Broken Pipeline", "High")],
     "infrastructure":[("Broken Streetlight", "Medium"), ("Damaged Sign", "Low"), ("Broken Footpath", "Medium")],
     "encroachment":  [("Encroachment", "Low"), ("Illegal Hoarding", "Low"), ("Unauthorized Parking", "Low")],
+    "bus_lane":      [("Bus Lane Encroachment", "High"), ("Unauthorized BRTS Obstruction", "High"), ("Transit Chokepoint Delay", "Medium")],
     "animal":        [("Stray Animal Hazard", "Low"), ("Animal Carcass", "High")],
 }
 
@@ -584,7 +585,7 @@ async def get_incident(inc_id: int):
     return incident_row_to_dict(row)
 
 VALID_SEVERITIES = {"High", "Medium", "Low"}
-VALID_CATEGORIES = {"road", "garbage", "water", "infrastructure", "encroachment", "animal", "other"}
+VALID_CATEGORIES = {"road", "garbage", "water", "infrastructure", "encroachment", "bus_lane", "animal", "other"}
 
 @app.post("/api/incidents")
 @limiter.limit("30/minute")

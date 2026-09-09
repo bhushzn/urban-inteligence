@@ -11,6 +11,7 @@ interface Props {
 
 const CATEGORIES = [
   { id: "road",           label: "Road / Pothole",   icon: "⚠️" },
+  { id: "bus_lane",       label: "Bus Lane Violation", icon: "🚌" },
   { id: "garbage",        label: "Garbage Dump",      icon: "🗑️" },
   { id: "water",          label: "Waterlogging",      icon: "💧" },
   { id: "infrastructure", label: "Infrastructure",    icon: "💡" },

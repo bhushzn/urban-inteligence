@@ -43,10 +43,12 @@ function makeBusIcon(busNum: string, speed: number) {
     className: "",
     html: `
       <div style="
-        display:flex;align-items:center;gap:4px;
-        background:rgba(15, 23, 42, 0.92);
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        background:rgba(15,23,42,0.95);
         border:1.5px solid #38bdf8;
-        padding:2px 6px;
+        padding:3px 8px;
         border-radius:12px;
         box-shadow:0 0 12px rgba(56,189,248,0.4);
         color:#fff;
@@ -63,6 +65,34 @@ function makeBusIcon(busNum: string, speed: number) {
     `,
     iconSize: [84, 24],
     iconAnchor: [42, 12],
+  });
+}
+
+function makeBRTSIcon(label: string, status: "clear" | "warning") {
+  const isWarn = status === "warning";
+  const bg = isWarn ? "#ef4444" : "#10b981";
+  const icon = isWarn ? "⚠️" : "🚌";
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        display:inline-flex;
+        align-items:center;
+        gap:4px;
+        background:rgba(15,23,42,0.92);
+        border:1.5px solid ${bg};
+        border-radius:9999px;
+        padding:2px 8px;
+        box-shadow:0 0 12px ${bg}88;
+        white-space:nowrap;
+        transform:translate(-50%, -50%);
+      ">
+        <span style="font-size:10px;">${icon}</span>
+        <span style="color:#f8fafc;font-size:10px;font-weight:700;font-family:Inter,sans-serif;">${label}</span>
+      </div>
+    `,
+    iconSize: [110, 24],
+    iconAnchor: [55, 12],
   });
 }
 
@@ -96,14 +126,63 @@ interface Props {
   incidents: Incident[];
   activeIncident: Incident | null;
   onMarkerClick: (inc: Incident) => void;
-  mapLayers: { heatmap: boolean; fleet: boolean; potholes: boolean };
-  onToggleLayer: (layer: "heatmap" | "fleet" | "potholes") => void;
+  mapLayers: { heatmap: boolean; fleet: boolean; potholes: boolean; busLane?: boolean };
+  onToggleLayer: (layer: "heatmap" | "fleet" | "potholes" | "busLane") => void;
   activeRoute?: SafeRouteResponse | null;
   onClearRoute?: () => void;
 }
 
 // Bhopal city centre
 const BHOPAL_CENTER: [number, number] = [23.8388, 77.7753];
+
+// Dedicated Bhopal BRTS Rapid Transit Corridors
+const BRTS_CORRIDORS: [number, number][][] = [
+  // Corridor 1: Misrod ➔ Habibganj ➔ MP Nagar ➔ Roshanpura ➔ Bairagarh
+  [
+    [23.8050, 77.8080],
+    [23.8180, 77.7990],
+    [23.8270, 77.7940],
+    [23.8340, 77.7850],
+    [23.8440, 77.7620],
+    [23.8550, 77.7400],
+    [23.8640, 77.7200],
+  ],
+  // Corridor 2: Hoshangabad Rd Link ➔ Board Office ➔ Link Rd 1
+  [
+    [23.8120, 77.7850],
+    [23.8220, 77.7890],
+    [23.8270, 77.7940],
+    [23.8390, 77.8020],
+    [23.8500, 77.8100],
+  ],
+];
+
+const BRTS_CHECKPOINTS = [
+  {
+    id: "brts-1",
+    name: "Roshanpura Hub",
+    coords: [23.8340, 77.7850] as [number, number],
+    status: "clear" as const,
+    compliance: "96% Clear",
+    desc: "Active AI Camera Unit DL-108 scanning lane",
+  },
+  {
+    id: "brts-2",
+    name: "MP Nagar Chokepoint",
+    coords: [23.8270, 77.7940] as [number, number],
+    status: "warning" as const,
+    compliance: "Encroachment Alert",
+    desc: "Private vehicle obstruction detected in transit corridor",
+  },
+  {
+    id: "brts-3",
+    name: "Habibganj Station Lane",
+    coords: [23.8180, 77.7990] as [number, number],
+    status: "clear" as const,
+    compliance: "98% Clear",
+    desc: "Smooth transit speed: 38 km/h average",
+  },
+];
 
 // Simulated Transit Bus Fleet with live routes
 interface BusVehicle {
@@ -344,6 +423,54 @@ export default function MapView({
               />
             </>
           )}
+
+          {/* BRTS Dedicated Bus Corridors & Enforcements */}
+          {mapLayers.busLane && (
+            <>
+              {BRTS_CORRIDORS.map((corridor, idx) => (
+                <Polyline
+                  key={`brts-outer-${idx}`}
+                  positions={corridor}
+                  pathOptions={{
+                    color: "#f472b6",
+                    weight: 10,
+                    opacity: 0.25,
+                  }}
+                />
+              ))}
+              {BRTS_CORRIDORS.map((corridor, idx) => (
+                <Polyline
+                  key={`brts-inner-${idx}`}
+                  positions={corridor}
+                  pathOptions={{
+                    color: "#ec4899",
+                    weight: 4,
+                    dashArray: "6, 8",
+                    opacity: 0.9,
+                  }}
+                />
+              ))}
+              {BRTS_CHECKPOINTS.map((cp) => (
+                <Marker key={cp.id} position={cp.coords} icon={makeBRTSIcon(cp.name, cp.status)}>
+                  <Popup>
+                    <div style={{ minWidth: "190px", fontFamily: "Inter, sans-serif" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                        <span style={{ fontSize: "14px" }}>{cp.status === "warning" ? "⚠️" : "🚌"}</span>
+                        <h4 style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "12px", margin: 0 }}>{cp.name}</h4>
+                      </div>
+                      <div style={{ padding: "4px 8px", background: cp.status === "warning" ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)", border: `1px solid ${cp.status === "warning" ? "rgba(239,68,68,0.4)" : "rgba(16,185,129,0.4)"}`, borderRadius: "6px", margin: "6px 0" }}>
+                        <p style={{ color: cp.status === "warning" ? "#f87171" : "#34d399", fontSize: "11px", fontWeight: 600, margin: 0 }}>
+                          {cp.compliance}
+                        </p>
+                        <p style={{ color: "#94a3b8", fontSize: "10px", margin: "2px 0 0 0" }}>{cp.desc}</p>
+                      </div>
+                      <p style={{ color: "#64748b", fontSize: "9px", margin: 0 }}>Enforced via CityEye Edge-YOLO Transit Feed</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </>
+          )}
         </MapContainer>
 
         {/* Map Controls overlay */}
@@ -352,6 +479,7 @@ export default function MapView({
           {[
             { key: "potholes" as const, label: "Show Incidents", color: "red" },
             { key: "fleet"    as const, label: "Track Fleet",    color: "cyan" },
+            { key: "busLane"  as const, label: "BRTS Bus Lanes", color: "pink" },
             { key: "heatmap"  as const, label: "Heatmap",        color: "amber" },
           ].map(({ key, label, color }) => (
             <button
@@ -361,6 +489,7 @@ export default function MapView({
                 mapLayers[key]
                   ? color === "red"   ? "bg-red-500/20 border-red-500/40 text-red-400"
                   : color === "cyan"  ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400"
+                  : color === "pink"  ? "bg-pink-500/20 border-pink-500/40 text-pink-400"
                                       : "bg-amber-500/20 border-amber-500/40 text-amber-400"
                   : "bg-slate-800/40 border-slate-700/40 text-slate-400"
               }`}

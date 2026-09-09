@@ -21,6 +21,7 @@ export default function AnalyticsPanel({ analytics }: Props) {
 
   const catColors: Record<string, string> = {
     road:           "#ef4444",
+    bus_lane:       "#ec4899",
     garbage:        "#f97316",
     water:          "#3b82f6",
     infrastructure: "#fbbf24",
@@ -105,7 +106,7 @@ export default function AnalyticsPanel({ analytics }: Props) {
           {analytics.category_breakdown.slice(0, 6).map(c => {
             const pct = Math.round((c.count / total) * 100);
             const color = catColors[c.category] ?? "#64748b";
-            const label = c.category.charAt(0).toUpperCase() + c.category.slice(1);
+            const label = c.category === "bus_lane" ? "Bus Lane" : c.category.charAt(0).toUpperCase() + c.category.slice(1);
             return (
               <div key={c.category} className="flex items-center gap-2">
                 <span className="text-xs text-slate-400 w-20 shrink-0 truncate">{label}</span>

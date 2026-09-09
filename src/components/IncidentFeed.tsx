@@ -214,6 +214,7 @@ function IncidentCard({
   const confPct = inc.confidence > 0 ? Math.round(inc.confidence * 100) : null;
   const typeIcon = 
     inc.category === "road"           ? "⚠️"
+    : inc.category === "bus_lane"     ? "🚌"
     : inc.category === "garbage"      ? "🗑️"
     : inc.category === "water"        ? "💧"
     : inc.category === "infrastructure" ? "💡"

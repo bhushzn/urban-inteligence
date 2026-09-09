@@ -39,7 +39,7 @@ export default function App() {
   const [user,           setUser]           = useState<User | null>(() => getStoredUser());
   const [soundEnabled,   setSoundEnabled]   = useState(true);
   const [exportToast,    setExportToast]    = useState(false);
-  const [mapLayers,      setMapLayers]      = useState({ heatmap: false, fleet: true, potholes: true });
+  const [mapLayers,      setMapLayers]      = useState({ heatmap: false, fleet: true, potholes: true, busLane: true });
   const [notification,   setNotification]   = useState<string | null>(null);
 
   const soundRef = useRef(soundEnabled);
@@ -131,7 +131,7 @@ export default function App() {
     setTimeout(() => setExportToast(false), 3000);
   }, [incidents]);
 
-  const toggleLayer = useCallback((layer: "heatmap" | "fleet" | "potholes") => {
+  const toggleLayer = useCallback((layer: "heatmap" | "fleet" | "potholes" | "busLane") => {
     setMapLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
   }, []);
 

@@ -300,6 +300,7 @@ export const DEFAULT_ANALYTICS: Analytics = {
   ],
   category_breakdown: [
     { category: "road", count: 22 },
+    { category: "bus_lane", count: 14 },
     { category: "garbage", count: 11 },
     { category: "water", count: 7 },
     { category: "infrastructure", count: 5 },
