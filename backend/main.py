@@ -270,13 +270,6 @@ def work_order_row_to_dict(row: tuple) -> Optional[dict]:
     d["after_image_url"] = storage.format_image_url(d.get("after_image_path")) if d.get("after_image_path") else None
     return d
 
-# ─── Auto Incident Background Task (Simulates Real City Telemetry) ──────────
-AUTO_INCIDENTS = [
-    ("Pothole Detected", "High", 23.8291, 77.7945, "Ward 6", "Kolar Road"),
-    ("Garbage Overflow", "Medium", 23.8380, 77.7810, "Ward 11", "Bittan Market"),
-    ("Waterlogging", "High", 23.8155, 77.7895, "Ward 4", "Misrod Area"),
-    ("Broken Streetlight", "Low", 23.8478, 77.7755, "Ward 14", "Bairagarh"),
-    ("Encroachment", "Medium", 23.8330, 77.7680, "Ward 8", "Hoshangabad Road"),
 # ─── Lifecycle Events ───────────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup():
