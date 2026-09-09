@@ -64,7 +64,7 @@ Render offers free hosting with native Docker support and WebSocket support.
 1. Go to **New +** → **Web Service**.
 2. Connect your GitHub repository.
 3. Configure the service:
-   - **Name:** `urbanintel-api`
+   - **Name:** `cityeye-api`
    - **Environment:** `Docker`
    - **Region:** Choose closest to you (e.g., Oregon or Singapore)
    - **Branch:** `main`
@@ -77,20 +77,20 @@ Render offers free hosting with native Docker support and WebSocket support.
    | `PORT` | `10000` | Port for Render |
    | `DATABASE_URL` | `postgresql://...` | Cloud PostgreSQL URI |
    | `JWT_SECRET` | `<random-secure-string>` | Secret for JWT hashing |
-   | `CORS_ORIGINS` | `*` or `https://urbanintel.vercel.app` | Allowed origins |
+   | `CORS_ORIGINS` | `*` or `https://cityeye.vercel.app` | Allowed origins |
    | `CLOUDINARY_CLOUD_NAME` | *(Optional)* | Cloudinary cloud name |
    | `CLOUDINARY_API_KEY` | *(Optional)* | Cloudinary API key |
    | `CLOUDINARY_API_SECRET` | *(Optional)* | Cloudinary API secret |
 5. Click **Deploy Web Service**.
 6. Once deployed, test the live health endpoint:
    ```
-   https://urbanintel-api.onrender.com/api/health
+   https://cityeye-api.onrender.com/api/health
    ```
    You should see:
    ```json
    {
      "status": "healthy",
-     "service": "UrbanIntel AI Command Center",
+     "service": "CityEye Command Center",
      "database": { "status": "connected", "engine": "PostgreSQL" }
    }
    ```
@@ -104,11 +104,11 @@ Render offers free hosting with native Docker support and WebSocket support.
 3. Under **Environment Variables**, add:
    | Key | Value | Example |
    |---|---|---|
-   | `VITE_API_URL` | Your Render Backend URL | `https://urbanintel-api.onrender.com` |
+   | `VITE_API_URL` | Your Render Backend URL | `https://cityeye-api.onrender.com` |
 4. Click **Deploy**.
 5. In ~45 seconds, your command center dashboard will be live at:
    ```
-   https://urbanintel.vercel.app
+   https://cityeye.vercel.app
    ```
 
 ---
