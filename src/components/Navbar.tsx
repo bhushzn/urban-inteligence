@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Radio,
   Bus,
   AlertTriangle,
   Activity,
@@ -113,9 +112,13 @@ export default function Navbar({
     <header className="sticky top-0 z-[5000] bg-[#090d16] border-b border-white/10 px-4 lg:px-6 py-2.5 transition-colors shadow-sm">
       <div className="flex items-center justify-between gap-4">
         {/* Left: Brand Identity & Municipal Operations Center */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 rounded bg-[#131b2e] border border-sky-500/30 flex items-center justify-center text-sky-400">
-            <Radio className="w-4 h-4 text-sky-400" />
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#080c14] border border-white/15 flex items-center justify-center overflow-hidden shrink-0 shadow-md p-0.5 hover:border-sky-500/50 transition-colors">
+            <img
+              src="/logo.png"
+              alt="CityEye Command Center Logo"
+              className="w-full h-full object-contain rounded-lg"
+            />
           </div>
 
           <div>

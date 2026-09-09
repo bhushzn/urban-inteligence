@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
-  Sparkles,
   Cpu,
   Layers,
   BarChart3,
@@ -44,8 +43,8 @@ export const ProjectShowcaseModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/60 bg-slate-900/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Sparkles className="w-5 h-5 text-white animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-[#080c14] border border-white/15 flex items-center justify-center overflow-hidden shrink-0 p-0.5 shadow-md">
+              <img src="/logo.png" alt="CityEye Logo" className="w-full h-full object-contain rounded-lg" />
             </div>
             <div>
               <div className="flex items-center gap-2">

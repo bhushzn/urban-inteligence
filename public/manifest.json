@@ -1,17 +1,29 @@
 {
-  "name": "UrbanIntel AI — Smart City Command Center",
-  "short_name": "UrbanIntel",
-  "description": "Autonomous Road Anomaly, Fleet Sensing & Municipal Dispatch Platform for Smart Cities (SIH PS 26124)",
+  "name": "CityEye — Smart City Command Center",
+  "short_name": "CityEye",
+  "description": "Real-Time Urban Intelligence, Fleet Telemetry & Autonomous Municipal Anomaly Detection",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0f1e",
+  "background_color": "#080c14",
   "theme_color": "#0ea5e9",
   "orientation": "any",
   "icons": [
     {
-      "src": "/vite.svg",
-      "sizes": "192x192 512x512",
+      "src": "/favicon.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
