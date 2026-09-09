@@ -6,8 +6,29 @@ Compatible with both PostgreSQL and SQLite
 import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+import hmac
+import hashlib
+import json
+import base64
+
+try:
+    from jose import JWTError, jwt
+    USE_JOSE = True
+except ImportError:
+    try:
+        import jwt
+        JWTError = Exception
+        USE_JOSE = False
+    except ImportError:
+        JWTError = Exception
+        jwt = None
+
+try:
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+except ImportError:
+    pwd_context = None
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import database
@@ -17,28 +38,84 @@ SECRET_KEY = os.getenv("JWT_SECRET", "cityeye-sih-2024-super-secret-key-change-i
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
 
-# ─── Password Hashing ──────────────────────────────────────────────────────
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    if pwd_context:
+        return pwd_context.hash(password)
+    # Built-in secure PBKDF2 fallback
+    salt = os.urandom(16).hex()
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100000)
+    return f"pbkdf2:{salt}:{dk.hex()}"
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    if hashed.startswith("pbkdf2:"):
+        parts = hashed.split(":")
+        if len(parts) == 3:
+            salt = parts[1]
+            expected = parts[2]
+            dk = hashlib.pbkdf2_hmac("sha256", plain.encode(), salt.encode(), 100000)
+            return hmac.compare_digest(dk.hex(), expected)
+    if pwd_context:
+        try:
+            return pwd_context.verify(plain, hashed)
+        except Exception:
+            return False
+    return False
+
+def _b64_url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode().rstrip("=")
+
+def _b64_url_decode(s: str) -> bytes:
+    padding = "=" * ((4 - len(s) % 4) % 4)
+    return base64.urlsafe_b64decode(s + padding)
 
 # ─── JWT Token ──────────────────────────────────────────────────────────────
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    to_encode.update({"exp": int(expire.timestamp())})
+    
+    if jwt is not None:
+        return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    
+    # Pure Python standard library JWT HS256 implementation
+    header = {"typ": "JWT", "alg": "HS256"}
+    h_b64 = _b64_url_encode(json.dumps(header, separators=(",", ":")).encode())
+    p_b64 = _b64_url_encode(json.dumps(to_encode, separators=(",", ":")).encode())
+    signing_input = f"{h_b64}.{p_b64}".encode()
+    sig = hmac.new(SECRET_KEY.encode(), signing_input, hashlib.sha256).digest()
+    sig_b64 = _b64_url_encode(sig)
+    return f"{h_b64}.{p_b64}.{sig_b64}"
 
 def decode_token(token: str) -> Optional[dict]:
+    if not token or not isinstance(token, str):
+        return None
+    if jwt is not None:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            return payload
+        except Exception:
+            pass
+
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        parts = token.split(".")
+        if len(parts) != 3:
+            return None
+        h_b64, p_b64, sig_b64 = parts
+        signing_input = f"{h_b64}.{p_b64}".encode()
+        expected_sig = hmac.new(SECRET_KEY.encode(), signing_input, hashlib.sha256).digest()
+        actual_sig = _b64_url_decode(sig_b64)
+        if not hmac.compare_digest(expected_sig, actual_sig):
+            return None
+        payload_bytes = _b64_url_decode(p_b64)
+        payload = json.loads(payload_bytes.decode())
+        exp = payload.get("exp")
+        if exp and isinstance(exp, (int, float)):
+            if datetime.utcnow().timestamp() > exp:
+                return None
         return payload
-    except JWTError:
+    except Exception:
         return None
 
 # ─── User Queries ───────────────────────────────────────────────────────────

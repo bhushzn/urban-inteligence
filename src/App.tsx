@@ -216,10 +216,6 @@ export default function App() {
         </div>
       </main>
 
-      <div className="text-center pb-4 text-xs text-slate-600">
-        CityEye AI • Smart India Hackathon 2024 • Problem Statement 26124 • Built with ❤️ for civic safety
-      </div>
-
       {/* --- ALL MODALS (Rendered at Root level with z-[9999]) --- */}
 
       {/* Report Modal */}

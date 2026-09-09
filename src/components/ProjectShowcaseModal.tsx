@@ -49,7 +49,7 @@ export const ProjectShowcaseModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-white font-display">CityEye AI</h2>
+                <h2 className="text-lg font-bold text-white font-display">CityEye</h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
                   SIH PS 26124
                 </span>
@@ -125,7 +125,7 @@ export const ProjectShowcaseModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
                   <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Our Solution (CityEye AI)</span>
+                    <span>Our Solution (CityEye)</span>
                   </div>
                   <ul className="text-xs text-slate-400 space-y-1.5 list-disc pl-4">
                     <li>
@@ -172,7 +172,7 @@ export const ProjectShowcaseModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <span>Real-Time Computer Vision & Anomaly Pipeline</span>
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  CityEye AI utilizes Ultralytics <strong>YOLOv8</strong> optimized for urban road infrastructure anomaly segmentation.
+                  CityEye utilizes Ultralytics <strong>YOLOv8</strong> optimized for urban road infrastructure anomaly segmentation.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">

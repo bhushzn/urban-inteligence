@@ -1,4 +1,4 @@
-// API Client for CityEye AI Backend
+// API Client for CityEye Backend
 const RAW_API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 const BASE_URL = RAW_API_URL.replace(/\/+$/, "");
 

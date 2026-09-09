@@ -52,7 +52,7 @@ from auth import (
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
 app = FastAPI(
-    title="CityEye AI API",
+    title="CityEye API",
     version="2.0.0",
     description="Production-grade AI-powered Smart City Command Center backend."
 )
@@ -313,7 +313,7 @@ async def auto_incident_generator():
 @app.on_event("startup")
 async def startup():
     global yolo_model
-    print("[Main] Starting CityEye AI Command Center Backend (v2.0 Hardened)...")
+    print("[Main] Starting CityEye Command Center Backend (v2.0 Hardened)...")
     
     # Initialize Database (PostgreSQL or SQLite) & seed demo users
     await database.init_db(password_hasher=hash_password)
@@ -361,7 +361,7 @@ async def health():
 
     return {
         "status": "healthy" if db_health.get("status") == "connected" else "degraded",
-        "service": "CityEye AI Command Center",
+        "service": "CityEye Command Center",
         "version": "2.0.0",
         "uptime_seconds": uptime_sec,
         "timestamp": datetime.utcnow().isoformat() + "Z",

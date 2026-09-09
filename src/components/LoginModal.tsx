@@ -72,7 +72,7 @@ export default function LoginModal({ onClose, onSuccess }: Props) {
               <h2 className="font-display font-bold text-white text-lg">
                 {isRegister ? "Create Command Account" : "Command Center Login"}
               </h2>
-              <p className="text-xs text-slate-400">CityEye AI • Role-Based Access Control</p>
+              <p className="text-xs text-slate-400">CityEye • Role-Based Access Control</p>
             </div>
           </div>
           <button
