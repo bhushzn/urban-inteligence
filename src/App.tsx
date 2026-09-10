@@ -23,7 +23,7 @@ import { playIncidentAlertSound, showBrowserNotification, requestBrowserNotifica
 import { CheckCircle2 } from "lucide-react";
 
 export default function App() {
-  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>(() => api.getInitialIncidents());
   const [analytics, setAnalytics] = useState<Analytics>(DEFAULT_ANALYTICS);
   const [activeIncident, setActiveIncident] = useState<Incident | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
