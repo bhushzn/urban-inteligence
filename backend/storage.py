@@ -21,7 +21,11 @@ CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "").strip()
 CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "").strip()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOADS_DIR = os.getenv("UPLOADS_DIR", os.path.join(BASE_DIR, "uploads"))
+uploads_env = os.getenv("UPLOADS_DIR", "").strip()
+if uploads_env:
+    UPLOADS_DIR = uploads_env if os.path.isabs(uploads_env) else os.path.join(BASE_DIR, uploads_env)
+else:
+    UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 IS_CLOUDINARY_CONFIGURED = bool(
@@ -170,6 +174,8 @@ def format_image_url(image_path: Optional[str]) -> Optional[str]:
         return image_path
     if image_path.startswith("/uploads/"):
         return image_path
+    if image_path.startswith("uploads/"):
+        return f"/{image_path}"
     return f"/uploads/{image_path}"
 
 def get_storage_health() -> Dict[str, Any]:

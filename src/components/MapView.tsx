@@ -554,7 +554,18 @@ export default function MapView({
 
                     {inc.image_url && (
                       <div style={{ marginTop: "6px", height: "90px", overflow: "hidden", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                        <img src={resolveImageUrl(inc.image_url) || ""} alt="Evidence" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img
+                          src={resolveImageUrl(inc.image_url) || ""}
+                          alt="Evidence"
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (!target.dataset.failed) {
+                              target.dataset.failed = "true";
+                              target.src = "/dummy_roads/road_pothole_1.jpg";
+                            }
+                          }}
+                        />
                       </div>
                     )}
 

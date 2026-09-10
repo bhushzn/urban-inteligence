@@ -279,6 +279,13 @@ function OperationalIncidentCard({
               src={resolveImageUrl(inc.image_url) || ""}
               alt={inc.type}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.dataset.failed) {
+                  target.dataset.failed = "true";
+                  target.src = "/dummy_roads/road_pothole_1.jpg";
+                }
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500">No Image</div>

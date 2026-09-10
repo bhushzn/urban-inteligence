@@ -10,7 +10,7 @@ echo  Starting Frontend (React)  on http://localhost:5173
 echo.
 
 :: Start Backend
-start "CityEye Backend" cmd /k "cd /d "%~dp0backend" && "C:\Users\bhush\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\python.exe" -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+start "CityEye Backend" cmd /k "cd /d "%~dp0backend" && (if exist ".venv\Scripts\python.exe" ( .venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload ) else ( python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload ))"
 
 :: Wait a moment for backend to init
 timeout /t 3 /nobreak > nul
