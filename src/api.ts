@@ -724,11 +724,16 @@ export const IMAGE_BASE = BASE_URL;
 
 export function resolveImageUrl(pathOrUrl: string | null | undefined): string | null {
   if (!pathOrUrl) return null;
-  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
+  if (
+    pathOrUrl.startsWith("http://") ||
+    pathOrUrl.startsWith("https://") ||
+    pathOrUrl.startsWith("data:") ||
+    pathOrUrl.startsWith("blob:")
+  ) {
     return pathOrUrl;
   }
   const cleanPath = pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
-  return `${BASE_URL}${cleanPath}`;
+  return BASE_URL ? `${BASE_URL}${cleanPath}` : cleanPath;
 }
 
 /**
@@ -1038,7 +1043,21 @@ export const api = {
       "/uploads/real_garbage_bittan.jpg",
       "/uploads/road_subsidence_4.jpg"
     ];
-    const fallbackImg = sampleImgs[Math.floor(Math.random() * sampleImgs.length)];
+    let imageUrl = sampleImgs[Math.floor(Math.random() * sampleImgs.length)];
+
+    const imgEntry = data.get("image");
+    if (imgEntry && typeof imgEntry === "object" && "size" in imgEntry && (imgEntry as Blob).size > 0) {
+      try {
+        imageUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => resolve(imageUrl);
+          reader.readAsDataURL(imgEntry as Blob);
+        });
+      } catch {
+        // fallback to sample image
+      }
+    }
 
     const localIncident: Incident = {
       id: Date.now(),
@@ -1051,7 +1070,7 @@ export const api = {
       verified: false,
       resolved: false,
       category,
-      image_url: fallbackImg,
+      image_url: imageUrl,
       confidence: 0.94,
       bbox_x: 20, bbox_y: 20, bbox_w: 60, bbox_h: 50,
       created_at: new Date().toISOString(),

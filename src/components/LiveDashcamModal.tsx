@@ -80,6 +80,7 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
   const [ipConnected, setIpConnected] = useState<boolean>(false);
   const ipVideoRef = useRef<HTMLVideoElement>(null);
   const [showIpHelp, setShowIpHelp] = useState<boolean>(false);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
   const stopStream = useCallback(() => {
     if (streamRef.current) {
@@ -106,7 +107,7 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
         .filter((d) => d.kind === "videoinput")
         .map((d, i) => {
           const l = d.label.toLowerCase();
-          const isPhone = l.includes("virtual") || l.includes("phone") || l.includes("oppo") || l.includes("droidcam");
+          const isPhone = l.includes("virtual") || l.includes("phone") || l.includes("oppo") || l.includes("droidcam") || l.includes("back") || l.includes("rear");
           return {
             deviceId: d.deviceId,
             label: d.label || (i === 0 ? "Integrated Laptop Camera" : `Camera Device ${i + 1}`),
@@ -121,7 +122,7 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
     }
   }, []);
 
-  const startCamera = useCallback(async (deviceId?: string) => {
+  const startCamera = useCallback(async (deviceId?: string, targetFacing?: "environment" | "user") => {
     setCamError(null);
     setCamReady(false);
     stopStream();
@@ -131,6 +132,8 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
       return;
     }
 
+    const currentFacing = targetFacing || facingMode;
+
     try {
       let stream: MediaStream | null = null;
 
@@ -138,15 +141,36 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
       if (deviceId) {
         try {
           stream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { ideal: deviceId } },
+            video: {
+              deviceId: { ideal: deviceId },
+              facingMode: { ideal: currentFacing },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
             audio: false,
           });
         } catch (e1) {
-          console.warn("Device specific constraint failed, falling back to default camera", e1);
+          console.warn("Device specific constraint failed, falling back to facingMode", e1);
         }
       }
 
-      // 2. Fallback to general video constraint (most compatible with all webcams)
+      // 2. Try facingMode (e.g. environment for rear/back camera on mobile)
+      if (!stream) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: currentFacing },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
+            audio: false,
+          });
+        } catch (e2) {
+          console.warn("facingMode constraint failed, falling back to default video", e2);
+        }
+      }
+
+      // 3. Fallback to general video constraint (most compatible with all webcams)
       if (!stream) {
         stream = await navigator.mediaDevices.getUserMedia({
           video: true,
@@ -155,6 +179,14 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
       }
 
       streamRef.current = stream;
+
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        const settings = videoTrack.getSettings();
+        if (settings.deviceId) {
+          setSelectedDeviceId(settings.deviceId);
+        }
+      }
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -175,7 +207,23 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
         setCamError(`Camera error: ${msg}`);
       }
     }
-  }, [stopStream]);
+  }, [facingMode, stopStream]);
+
+  const toggleCameraFacing = useCallback(async () => {
+    const nextFacing = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(nextFacing);
+    setToastMsg(nextFacing === "environment" ? "📷 Switched to Back Camera (Road View)" : "🤳 Switched to Front Camera");
+    setTimeout(() => setToastMsg(null), 3000);
+
+    if (devices.length > 1) {
+      const currentIdx = devices.findIndex((d) => d.deviceId === selectedDeviceId);
+      const nextDev = devices[(currentIdx + 1) % devices.length];
+      setSelectedDeviceId(nextDev.deviceId);
+      await startCamera(nextDev.deviceId, nextFacing);
+    } else {
+      await startCamera(undefined, nextFacing);
+    }
+  }, [facingMode, devices, selectedDeviceId, startCamera]);
 
   const connectIpCamera = useCallback(() => {
     setIpConnected(false);
@@ -411,6 +459,17 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
         </span>
       </div>
       <div className="flex items-center space-x-2">
+        {cameraMode === "device" && (
+          <button
+            onClick={toggleCameraFacing}
+            className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border border-indigo-500/60 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 flex items-center gap-1 transition-all shadow-md active:scale-95"
+            title="Flip camera between Back / Road camera and Front camera"
+          >
+            <span>🔄</span>
+            <span className="hidden sm:inline">{facingMode === "environment" ? "Back (Road)" : "Front (Selfie)"}</span>
+            <span className="sm:hidden">Flip</span>
+          </button>
+        )}
         <button
           onClick={() => setAutoPatrol(!autoPatrol)}
           className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
@@ -626,6 +685,15 @@ export const LiveDashcamModal: React.FC<LiveDashcamModalProps> = ({
                     <span>{p.label.replace("Windows Virtual Camera", "Phone Link")}</span>
                   </button>
                 ))}
+
+                <button
+                  onClick={toggleCameraFacing}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 transition-all bg-indigo-600/90 hover:bg-indigo-500 text-white border-indigo-400 shadow shadow-indigo-600/30 active:scale-95"
+                  title="Flip camera between rear/back camera (road view) and front camera"
+                >
+                  <span>🔄</span>
+                  <span>Flip: {facingMode === "environment" ? "Back Camera" : "Front Camera"}</span>
+                </button>
 
                 <button
                   onClick={() => {
